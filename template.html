@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>用量统计 · 本地账本（Token 级）</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #fff; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    color: #1a1a1a; font-size: 13px; -webkit-font-smoothing: antialiased;
+  }
+  .num { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+
+  .topbar { display: flex; align-items: center; justify-content: space-between; height: 52px; padding: 0 20px; border-bottom: 1px solid #ececec; position: sticky; top: 0; background: #fff; z-index: 20; }
+  .brand { display: flex; align-items: center; gap: 7px; }
+  .brand h1 { font-size: 15px; font-weight: 500; margin: 0; letter-spacing: .2px; }
+  .info { width: 13px; height: 13px; color: #b8b8b8; flex: none; }
+  .top-actions { display: flex; align-items: center; gap: 6px; }
+  .tbtn { display: inline-flex; align-items: center; gap: 5px; height: 28px; padding: 0 9px; border: 0; background: transparent; color: #5f5f5f; font-size: 12.5px; border-radius: 6px; cursor: pointer; font-family: inherit; white-space: nowrap; }
+  .tbtn:hover { background: #f5f5f5; color: #1a1a1a; }
+  .tbtn.solid { border: 1px solid #e3e3e3; color: #1a1a1a; padding: 0 11px; }
+  .tbtn.solid:hover { background: #fafafa; border-color: #d6d6d6; }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: #22c55e; display: inline-block; }
+  .iconbtn { width: 28px; height: 28px; border: 0; background: transparent; border-radius: 6px; cursor: pointer; color: #8a8a8a; display: grid; place-items: center; }
+  .iconbtn:hover { background: #f5f5f5; color: #1a1a1a; }
+  .vsep { width: 1px; height: 16px; background: #ebebeb; margin: 0 4px; }
+
+
+  .filterbar { display: flex; align-items: center; justify-content: flex-end; gap: 8px; padding: 12px 20px 4px; }
+  .pill { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border: 1px solid #e6e6e6; border-radius: 6px; background: #fff; color: #4a4a4a; font-size: 12.5px; cursor: pointer; font-family: inherit; }
+  .pill:hover { border-color: #d8d8d8; background: #fcfcfc; }
+  select.pill { appearance: none; -webkit-appearance: none; padding-right: 24px; background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23a0a0a0' stroke-width='2.4'><path d='M6 9l6 6 6-6'/></svg>"); background-repeat: no-repeat; background-position: right 8px center; }
+  #rangeFilter { width: 104px; }
+  .bar { transition: fill .12s ease; }
+  .bar:hover { fill: #0d8a7c; }
+
+  .kpis { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; padding: 12px 20px 0; }
+  .kpi { border: 1px solid #ececec; border-radius: 8px; padding: 13px 15px 14px; background: #fff; }
+  .kpi .label { display: flex; align-items: center; gap: 5px; font-size: 12px; color: #8f8f8f; margin-bottom: 9px; white-space: nowrap; }
+  .kpi .value { font-size: 24px; font-weight: 500; letter-spacing: -.4px; line-height: 1.1; color: #111; }
+  .kpi .value .unit { font-size: 12px; font-weight: 400; color: #9a9a9a; margin-left: 5px; letter-spacing: 0; }
+  .kpi .sub { margin-top: 7px; font-size: 11.5px; color: #a0a0a0; }
+
+  .card { border: 1px solid #ececec; border-radius: 8px; margin: 14px 20px 0; background: #fff; }
+  .card-hd { display: flex; align-items: center; justify-content: space-between; padding: 13px 16px 0; }
+  .card-hd h2 { font-size: 13.5px; font-weight: 500; margin: 0; }
+  .card-hd .muted { color: #9a9a9a; font-size: 12px; margin-left: 6px; font-weight: 400; }
+  .legend { display: flex; align-items: center; gap: 5px; font-size: 12px; color: #8f8f8f; }
+  .sq { width: 9px; height: 9px; border-radius: 2px; background: #12a594; }
+
+  .seg { display: inline-flex; gap: 2px; padding: 2px; background: #f5f5f5; border-radius: 7px; }
+  .seg button { height: 24px; padding: 0 11px; border: 0; background: transparent; border-radius: 5px; font-size: 12px; color: #7a7a7a; cursor: pointer; font-family: inherit; }
+  .seg button.on { background: #fff; color: #1a1a1a; box-shadow: 0 0 0 1px #e6e6e6; }
+  .chart-wrap { position: relative; height: 152px; margin: 8px 16px 12px; }
+
+  .tbl-hd { display: flex; align-items: center; justify-content: space-between; padding: 13px 16px; border-bottom: 1px solid #f0f0f0; }
+  .tbl-hd .left { display: flex; align-items: center; gap: 10px; }
+  .tbl-hd h2 { font-size: 13.5px; font-weight: 500; margin: 0; }
+  .chips { display: flex; gap: 6px; }
+  .chip { font-size: 11.5px; color: #8f8f8f; border: 1px solid #eee; border-radius: 5px; padding: 2px 7px; background: #fafafa; }
+  .tbl-scroll { max-height: 470px; overflow: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  thead th { position: sticky; top: 0; background: #fff; z-index: 2; font-size: 12px; font-weight: 400; color: #9a9a9a; text-align: left; padding: 9px 12px; border-bottom: 1px solid #f0f0f0; white-space: nowrap; }
+  thead th.r { text-align: right; }
+  tbody td { padding: 9px 12px; border-bottom: 1px solid #f5f5f5; font-size: 12.5px; color: #333; white-space: nowrap; }
+  tbody tr:hover td { background: #fafafa; }
+  td.r { text-align: right; }
+  td.time { color: #9a9a9a; font-size: 12px; }
+  .model { display: inline-flex; align-items: center; gap: 6px; }
+  .mdot { width: 6px; height: 6px; border-radius: 50%; flex: none; }
+  .dash { color: #c8c8c8; }
+  .empty { padding: 40px; text-align: center; color: #a0a0a0; font-size: 13px; }
+  .cost td { padding: 10px 12px; }
+  .cost tbody tr:last-child td { border-bottom: 0; }
+  .share { display: inline-flex; align-items: center; gap: 6px; justify-content: flex-end; }
+  .sharebar { width: 56px; height: 4px; border-radius: 2px; background: #f0f0f0; overflow: hidden; }
+  .sharebar i { display: block; height: 100%; background: #12a594; }
+  .tag { font-size: 11px; color: #993c1d; background: #faece7; border-radius: 4px; padding: 1px 5px; margin-left: 6px; }
+  .tag.muted { color: #7a7a7a; background: #f2f2f2; }
+
+  .foot { padding: 14px 20px 28px; color: #a8a8a8; font-size: 11.5px; line-height: 1.8; }
+  .foot b { font-weight: 500; color: #8a8a8a; }
+
+  tbody tr.rowlink { cursor: pointer; }
+  tbody tr.rowlink:hover td { background: #f7fbfa; }
+
+  .drawer-mask { position: fixed; inset: 0; background: rgba(0,0,0,.26); opacity: 0; pointer-events: none; transition: opacity .18s ease; z-index: 40; }
+  .drawer-mask.show { opacity: 1; pointer-events: auto; }
+  .drawer { position: fixed; top: 0; right: 0; height: 100%; width: 470px; max-width: 94vw; background: #fff; border-left: 1px solid #ececec; transform: translateX(101%); transition: transform .22s cubic-bezier(.4,0,.2,1); z-index: 41; display: flex; flex-direction: column; }
+  .drawer.show { transform: none; }
+  .drawer-hd { display: flex; justify-content: space-between; align-items: flex-start; padding: 16px 18px 12px; border-bottom: 1px solid #f0f0f0; }
+  .drawer-hd h3 { margin: 0; font-size: 14px; font-weight: 500; }
+  .drawer-hd p { margin: 5px 0 0; font-size: 12px; color: #9a9a9a; }
+  .drawer-body { padding: 16px 18px 30px; overflow: auto; }
+  .dsec { margin-bottom: 18px; }
+  .dsec h4 { margin: 0 0 6px; font-size: 11.5px; color: #a0a0a0; font-weight: 400; letter-spacing: .2px; }
+  .kv { display: flex; justify-content: space-between; gap: 14px; padding: 7px 0; font-size: 12.5px; border-bottom: 1px solid #f7f7f7; }
+  .kv:last-child { border-bottom: 0; }
+  .kv .k { color: #8a8a8a; flex: none; }
+  .kv .v { text-align: right; color: #1a1a1a; word-break: break-all; }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11px; color: #6b6b6b; }
+  .calc { background: #fafafa; border-radius: 8px; padding: 11px 13px; font-size: 12px; line-height: 2; color: #5f5e5a; }
+  .calc .line { display: flex; justify-content: space-between; gap: 10px; }
+  .calc .sum { border-top: 1px solid #ececec; margin-top: 6px; padding-top: 7px; color: #1a1a1a; font-weight: 500; }
+  .badge { display: inline-block; font-size: 11px; padding: 1px 6px; border-radius: 4px; background: #f2f2f2; color: #7a7a7a; }
+  .badge.peak { background: #faece7; color: #993c1d; }
+  .toast { position: fixed; left: 50%; bottom: 28px; transform: translate(-50%, 12px); background: #1a1a1a; color: #fff; font-size: 12.5px; padding: 8px 14px; border-radius: 7px; opacity: 0; pointer-events: none; transition: all .18s ease; z-index: 50; }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+  @media (max-width: 900px) {
+    .kpis { grid-template-columns: repeat(2, minmax(0,1fr)); }
+    .top-actions .tbtn.opt { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <h1>用量统计</h1>
+  </div>
+  <div class="top-actions">
+    <span class="tbtn" style="cursor:default"><span class="dot" id="syncDot"></span><span id="syncHint">刚刚同步</span></span>
+    <button class="tbtn solid" id="syncBtn">立即同步</button>
+    <span class="vsep"></span>
+    <button class="tbtn opt" id="autoBtn">自动刷新</button>
+  </div>
+</div>
+
+<div class="filterbar">
+  <select class="pill" id="scopeFilter" autocomplete="off">
+    <option value="billed" selected>平台计费（有积分）</option>
+    <option value="all">全部请求（含历史/定制）</option>
+  </select>
+  <select class="pill" id="rangeFilter" autocomplete="off">
+    <option value="30" selected>近 30 天</option>
+    <option value="7">近 7 天</option>
+    <option value="all">全部时间</option>
+  </select>
+</div>
+
+<div class="kpis">
+  <div class="kpi">
+    <div class="label">总金额（DeepSeek 官方价）</div>
+    <div class="value num" id="kpiAmount">—</div>
+    <div class="sub num" id="kpiAmountSub">—</div>
+  </div>
+  <div class="kpi">
+    <div class="label">总轮次（对话）
+    </div>
+    <div class="value num" id="kpiReq">—</div>
+    <div class="sub num" id="kpiReqSub">—</div>
+  </div>
+  <div class="kpi">
+    <div class="label">真实消耗 Tokens
+    </div>
+    <div class="value num" id="kpiTok">—</div>
+    <div class="sub num" id="kpiTokSub">—</div>
+  </div>
+  <div class="kpi">
+    <div class="label">缓存命中率
+    </div>
+    <div class="value num" id="kpiHit">—</div>
+    <div class="sub num" id="kpiHitSub">—</div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-hd">
+    <div style="display:flex; align-items:center;">
+      <h2>使用趋势</h2>
+      <span class="muted" id="trendRange">近 30 天</span>
+      <span class="legend" style="margin-left:14px"><span class="sq"></span><span id="legendName">金额</span></span>
+    </div>
+    <div class="seg" id="metricSeg">
+      <button class="on" data-m="amt">金额</button>
+      <button data-m="cr">积分</button>
+      <button data-m="req">请求</button>
+      <button data-m="tok">Tokens</button>
+    </div>
+  </div>
+  <div class="chart-wrap" id="chartHost"></div>
+</div>
+
+<div class="card">
+  <div class="tbl-hd">
+    <div class="left">
+      <h2>模型单位成本</h2>
+      <span class="chip">实测积分 ÷ token</span>
+    </div>
+  </div>
+  <div class="tbl-scroll" style="max-height:none">
+    <table class="cost">
+      <thead>
+        <tr>
+          <th>模型</th>
+          <th class="r">轮次</th>
+          <th class="r">金额 (¥)</th>
+          <th class="r">积分</th>
+          <th class="r">占比</th>
+          <th class="r">输入</th>
+          <th class="r">输出</th>
+          <th class="r">元 / 百万 token</th>
+          <th class="r">积分 / 百万 token</th>
+          <th class="r">缓存命中</th>
+          <th class="r">速度</th>
+        </tr>
+      </thead>
+      <tbody id="costBody"></tbody>
+    </table>
+  </div>
+  <div style="padding:10px 16px 13px; color:#a8a8a8; font-size:11.5px; border-top:1px solid #f5f5f5; line-height:1.7;">
+    「元 / 百万 token」= 按 DeepSeek 官方价折算后的实际单价，已含峰谷时段与缓存折扣的加权结果，并非目录价；「积分 / 百万 token」是平台计量单位，与人民币不可换算。非 DeepSeek 模型没有官方价，金额留空。
+  </div>
+</div>
+
+<div class="card" style="margin-bottom:0">
+  <div class="tbl-hd">
+    <div class="left">
+      <h2>请求日志</h2>
+      <div class="chips">
+        <span class="chip">rawUsage</span>
+        <span class="chip" id="chipCount">0 条</span>
+      </div>
+    </div>
+    <div style="display:flex; align-items:center; gap:8px;">
+      <select class="pill" id="logModelFilter" autocomplete="off" style="max-width:250px"><option value="">全部模型</option></select>
+    </div>
+  </div>
+  <div class="tbl-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:104px">时间</th>
+          <th>模型</th>
+          <th class="r" style="width:60px">步数</th>
+          <th class="r" style="width:96px">新增输入</th>
+          <th class="r" style="width:84px">输出</th>
+          <th class="r" style="width:92px">缓存命中</th>
+          <th class="r" style="width:92px">金额</th>
+          <th class="r" style="width:80px">积分</th>
+          <th class="r" style="width:76px">耗时</th>
+          <th class="r" style="width:84px">速度</th>
+          <th class="r" style="width:60px">首字</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+    <div class="empty" id="empty" style="display:none">当前筛选条件下没有记录</div>
+  </div>
+</div>
+
+<div class="foot">
+  <b>统计单位</b>是「一轮对话」：同一个 <span class="num">conversationRequestId</span> 下通常包含多次 API 调用（<span class="num">stepSeq</span>），token 与金额按步累加，积分取该轮合计（与客户端「共消耗」一致）。<br>
+  <b>数据来源</b>：本机 <span class="num">~/.workbuddy/projects/*/*.jsonl</span> 中每条 assistant 消息的 <span class="num">providerData.rawUsage</span>，按 <span class="num">conversationRequestId</span> 与 <span class="num">session_usage.credit_json</span> 对账；积分优先取库内快照，缺失时用日志逐轮求和补齐。<br>
+  <b>金额</b>按 DeepSeek 官方价目折算（元），每一步按其发生时刻判定高峰/空闲；非 DeepSeek 模型没有官方价，金额留空。<b>积分</b>是平台计量单位，与人民币不是 1:1。<br>
+  <b>速度</b> = 输出 tokens ÷ 轮次时长，含工具调用与客户端开销，非模型纯净时延。<b>首字（TTFT）</b>：本地未记录，故留空。<b>快照</b> <span id="genTime">—</span>。
+</div>
+
+<div class="drawer-mask" id="drawerMask"></div>
+<aside class="drawer" id="drawer" aria-hidden="true">
+  <div class="drawer-hd">
+    <div>
+      <h3>请求明细</h3>
+      <p id="dSub">—</p>
+    </div>
+    <button class="iconbtn" id="drawerClose" title="关闭">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+  <div class="drawer-body" id="drawerBody"></div>
+</aside>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const DATA = __DATA__;
+
+const MODEL_COLORS = {
+  'deepseek-v4.1-flash': '#12a594',
+  'deepseek-v4-pro': '#3fbfae',
+  'glm-5.3-flash': '#8d8bd6',
+  'glm-5.3': '#b9b7e8',
+  'minimax-m3.1-flash': '#e0a458',
+  'mimo-v2.6-pro': '#94a3b8',
+  'kimi-k3-1': '#d85a30',
+  'kimi-k3.1-pro': '#b8481f'
+};
+const colorOf = m => MODEL_COLORS[m] || '#b4b4b4';
+const fmt = n => n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fmtInt = n => n.toLocaleString('en-US');
+const fmtTok = n => n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : (n >= 1000 ? (n / 1000).toFixed(n >= 100000 ? 0 : 1) + 'K' : String(n));
+const fmtAxis = n => {
+  if (n >= 1e6) return (n / 1e6).toFixed(1).replace(/\.0$/, '') + 'M';
+  if (n >= 1e3) return (n / 1e3).toFixed(1).replace(/\.0$/, '') + 'k';
+  return String(Math.round(n));
+};
+const pad = x => String(x).padStart(2, '0');
+const escapeHtml = s => String(s === null || s === undefined ? '' : s)
+  .replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const dateOf = ts => { const d = new Date(ts); return pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()); };
+const money = n => n === null || n === undefined ? null : (n >= 1 ? n.toFixed(2) : n.toFixed(4));
+
+let metric = 'amt', logFilter = '', rangeDays = 30, scope = 'billed', lastRows = [];
+
+let rows = [], maxTs = 0, minTs = 0, META = {};
+
+function applyData(d) {
+  META = d || {};
+  rows = (d && d.rows) || [];
+  maxTs = rows.length ? Math.max(...rows.map(r => r.ts)) : Date.now();
+  minTs = rows.length ? Math.min(...rows.map(r => r.ts)) : maxTs;
+}
+
+function rangeStart() {
+  if (rangeDays === 'all') return 0;
+  const d = new Date(maxTs); d.setHours(23, 59, 59, 999);
+  return d.getTime() - (rangeDays - 1) * 86400000;
+}
+function filtered() {
+  const s = rangeStart();
+  return rows.filter(r => r.ts >= s && (scope === 'all' || r.hasCr !== false));
+}
+function sum(rs, k) { return rs.reduce((a, r) => a + (r[k] || 0), 0); }
+
+function renderKpis(rs) {
+  const cr = sum(rs, 'cr'), p = sum(rs, 'p'), c = sum(rs, 'c'), ch = sum(rs, 'ch');
+  const amt = sum(rs, 'cost');
+  const priced = rs.filter(r => r.cost !== null && r.cost !== undefined);
+  const peakN = rs.filter(r => r.peak === true).length;
+  const days = new Set(rs.map(r => new Date(r.ts).toDateString())).size || 1;
+  document.getElementById('kpiAmount').innerHTML = '¥' + (amt >= 1 ? amt.toFixed(2) : amt.toFixed(4));
+  document.getElementById('kpiAmountSub').textContent =
+    priced.length ? '覆盖 ' + priced.length + ' 轮 DeepSeek 对话 · 其中全高峰 ' + peakN + ' 轮' : '无 DeepSeek 请求';
+  document.getElementById('kpiReq').textContent = fmtInt(rs.length);
+  const billed = rs.filter(r => r.hasCr !== false).length;
+  const steps = rs.reduce((a, r) => a + (r.steps || 0), 0);
+  document.getElementById('kpiReqSub').textContent =
+    '含 ' + fmtInt(steps) + ' 次 API 调用 · 对应 ' + fmt(cr) + ' 积分';
+  document.getElementById('kpiTok').innerHTML = fmtTok(p + c);
+  document.getElementById('kpiTokSub').textContent = '输入 ' + fmtTok(p) + ' · 输出 ' + fmtTok(c);
+  document.getElementById('kpiHit').textContent = (p ? (ch / p * 100).toFixed(1) : '0.0') + '%';
+  document.getElementById('kpiHitSub').textContent = '命中 ' + fmtTok(ch) + ' / 输入 ' + fmtTok(p);
+}
+
+function buildSeries(rs) {
+  const n = rangeDays === 'all' ? Math.ceil((maxTs - minTs) / 86400000) + 1 : rangeDays;
+  const base = new Date(rangeDays === 'all' ? minTs : maxTs - (rangeDays - 1) * 86400000);
+  base.setHours(0, 0, 0, 0);
+  const map = {};
+  rs.forEach(r => {
+    const d = new Date(r.ts); d.setHours(0, 0, 0, 0);
+    const k = d.getTime();
+    if (!map[k]) map[k] = { cr: 0, req: 0, tok: 0, amt: 0 };
+    map[k].cr += r.cr; map[k].req += 1; map[k].tok += r.p + r.c; map[k].amt += (r.cost || 0);
+  });
+  const labels = [], cr = [], req = [], tok = [], amt = [];
+  for (let i = 0; i < n; i++) {
+    const d = new Date(base.getTime() + i * 86400000);
+    const v = map[d.getTime()] || { cr: 0, req: 0, tok: 0, amt: 0 };
+    labels.push(pad(d.getMonth() + 1) + '/' + pad(d.getDate()));
+    cr.push(+v.cr.toFixed(2)); req.push(v.req); tok.push(v.tok); amt.push(+v.amt.toFixed(4));
+  }
+  return { labels, cr, req, tok, amt };
+}
+
+function renderChart(rs) {
+  lastRows = rs;
+  const host = document.getElementById('chartHost');
+  if (!host) return;
+  const W = Math.max(360, host.clientWidth || 900);
+  const H = host.clientHeight || 152;
+  const s = buildSeries(rs);
+  const data = metric === 'amt' ? s.amt : metric === 'cr' ? s.cr : metric === 'req' ? s.req : s.tok;
+  const unitName = metric === 'amt' ? '元' : metric === 'cr' ? '积分' : metric === 'req' ? '请求' : 'tokens';
+  const padL = 48, padR = 12, padT = 12, padB = 22;
+  const plotW = Math.max(10, W - padL - padR), plotH = Math.max(10, H - padT - padB);
+  const peak = Math.max(1, ...data), top = peak * 1.18, n = data.length;
+  const slot = plotW / n, bw = Math.max(2.5, Math.min(22, slot * 0.5));
+  const yOf = v => padT + plotH - (v / top) * plotH;
+  const tick = v => (metric === 'req') ? String(Math.round(v)) : (metric === 'amt' ? v.toFixed(2) : fmtAxis(v));
+
+  let parts = [];
+  [0, top / 2, top].forEach(t => {
+    const yy = yOf(t);
+    parts.push('<line x1="' + padL + '" y1="' + yy.toFixed(1) + '" x2="' + (W - padR) + '" y2="' + yy.toFixed(1) + '" stroke="#f2f2f2" stroke-width="1"/>');
+    parts.push('<text x="' + (padL - 10) + '" y="' + (yy + 3.5).toFixed(1) + '" text-anchor="end" font-size="10.5" fill="#a0a0a0">' + tick(t) + '</text>');
+  });
+  data.forEach((v, i) => {
+    const h = (v / top) * plotH;
+    if (h <= 0) return;
+    const x = padL + slot * i + (slot - bw) / 2;
+    const label = s.labels[i] + ' · ' + unitName + ' ' + (metric === 'amt' ? '¥' + v.toFixed(4) : metric === 'req' ? v : (metric === 'tok' ? fmtTok(v) : fmt(v)));
+    parts.push('<rect class="bar" x="' + x.toFixed(1) + '" y="' + (padT + plotH - h).toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + h.toFixed(1) + '" rx="1.5" fill="#12a594"><title>' + label + '</title></rect>');
+  });
+  const stepX = Math.max(1, Math.ceil(n / 12));
+  s.labels.forEach((lb, i) => {
+    if (i % stepX !== 0) return;
+    parts.push('<text x="' + (padL + slot * i + slot / 2).toFixed(1) + '" y="' + (H - 6) + '" text-anchor="middle" font-size="10.5" fill="#a0a0a0">' + lb + '</text>');
+  });
+  host.innerHTML = '<svg width="100%" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" role="img" aria-label="每日' + unitName + '柱状图">' + parts.join('') + '</svg>';
+}
+
+function renderCost(rs) {
+  const totalCr = rs.reduce((a, r) => a + r.cr, 0);
+  const totalAmt = rs.reduce((a, r) => a + (r.cost || 0), 0);
+  const agg = {};
+  rs.forEach(r => {
+    const a = agg[r.m] || (agg[r.m] = { req: 0, cr: 0, p: 0, c: 0, ch: 0, dur: 0, amt: 0, priced: 0, billed: 0 });
+    a.req++; a.cr += (r.cr || 0); a.p += r.p; a.c += r.c; a.ch += r.ch; a.dur += r.dur || 0;
+    if (r.hasCr !== false) a.billed++;
+    if (r.cost !== null && r.cost !== undefined) { a.amt += r.cost; a.priced++; }
+  });
+  const list = Object.entries(agg).sort((a, b) => (b[1].amt - a[1].amt) || (b[1].cr - a[1].cr));
+  document.getElementById('costBody').innerHTML = list.map(([m, a]) => {
+    const share = totalCr ? a.cr / totalCr * 100 : 0;
+    const speed = a.dur && a.c ? (a.c / a.dur) : 0;
+    const hot = !a.priced && a.p > 0 && (a.cr / (a.p / 1e6)) > 500;
+    const perM = a.priced && (a.p + a.c) ? a.amt / ((a.p + a.c) / 1e6) : null;
+    const billTag = a.billed === 0 ? '<span class="tag muted">无积分</span>'
+      : (a.billed < a.req ? '<span class="tag muted">部分无积分</span>' : '');
+    return `<tr>
+      <td><span class="model"><span class="mdot" style="background:${colorOf(m)}"></span>${m}${hot ? '<span class="tag">高单价</span>' : ''}${billTag}</span></td>
+      <td class="r num">${a.req}</td>
+      <td class="r num">${a.priced ? '<b style="font-weight:500">¥' + money(a.amt) + '</b>' : '<span class="dash" title="该模型无官方价">—</span>'}</td>
+      <td class="r num">${a.billed ? fmt(a.cr) : '<span class="dash" title="这批请求没有积分记录">—</span>'}</td>
+      <td class="r num"><span class="share"><span class="sharebar"><i style="width:${share.toFixed(1)}%"></i></span>${share.toFixed(1)}%</span></td>
+      <td class="r num">${fmtTok(a.p)}</td>
+      <td class="r num">${fmtInt(a.c)}</td>
+      <td class="r num">${perM !== null ? '¥' + perM.toFixed(2) : '<span class="dash">—</span>'}</td>
+      <td class="r num">${a.billed && a.p ? fmt(a.cr / ((a.p + a.c) / 1e6)) : '<span class="dash">—</span>'}</td>
+      <td class="r num">${a.p ? (a.ch / a.p * 100).toFixed(1) + '%' : '—'}</td>
+      <td class="r num">${speed ? speed.toFixed(1) + ' tok/s' : '<span class="dash">—</span>'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderTable(rs) {
+  const tb = document.getElementById('tbody');
+  const list = rs
+    .filter(r => !logFilter || r.m === logFilter)
+    .sort((a, b) => b.ts - a.ts);
+  document.getElementById('chipCount').textContent = list.length + ' 条';
+  const empty = document.getElementById('empty');
+  empty.style.display = list.length ? 'none' : 'block';
+  if (!list.length && logFilter) {
+    empty.textContent = '当前时间范围内没有 ' + logFilter + ' 的记录，把右上角时间范围切到「全部时间」试试';
+  } else if (!list.length) {
+    empty.textContent = '当前筛选条件下没有记录';
+  }
+  tb.innerHTML = list.map(r => {
+    const hit = r.p ? (r.ch / r.p * 100) : 0;
+    const speed = r.dur && r.c ? r.c / r.dur : 0;
+    const priced = r.cost !== null && r.cost !== undefined;
+    return `<tr class="rowlink" data-rid="${r.rid}">
+      <td class="time num">${dateOf(r.ts)}${r.peak ? '<span class="tag" style="margin-left:4px">峰</span>' : ''}${r.live ? '<span class="tag muted" style="margin-left:4px" title="最近 10 分钟内仍在写入，积分可能继续增加">进行中</span>' : ''}</td>
+      <td><span class="model"><span class="mdot" style="background:${colorOf(r.m)}"></span>${r.m}</span></td>
+      <td class="r num">${r.steps || 1}</td>
+      <td class="r num">${fmtTok(r.p)}</td>
+      <td class="r num">${fmtInt(r.c)}</td>
+      <td class="r num">${r.p ? hit.toFixed(1) + '%' : '<span class="dash">—</span>'}</td>
+      <td class="r num">${priced ? '<b style="font-weight:500">¥' + money(r.cost) + '</b>' : '<span class="dash" title="该模型无官方价">—</span>'}</td>
+      <td class="r num">${r.hasCr === false ? '<span class="dash" title="无积分记录">—</span>' : fmt(r.cr)}</td>
+      <td class="r num">${r.dur ? r.dur.toFixed(1) + 's' : '<span class="dash">—</span>'}</td>
+      <td class="r num">${speed ? speed.toFixed(0) + ' tok/s' : '<span class="dash">—</span>'}</td>
+      <td class="r num"><span class="dash" title="本地未记录 TTFT">—</span></td>
+    </tr>`;
+  }).join('');
+  tb.querySelectorAll('tr[data-rid]').forEach(tr => {
+    tr.addEventListener('click', () => openDetail(tr.dataset.rid));
+  });
+}
+
+const WEEK = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+function fullTime(ts) {
+  const d = new Date(ts);
+  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + ' '
+    + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds()) + ' · ' + WEEK[d.getDay()];
+}
+const yuan = v => (v === null || v === undefined) ? '—' : (v >= 1 ? v.toFixed(2) : v.toFixed(4));
+
+function openDetail(rid) {
+  const r = rows.find(x => x.rid === rid);
+  if (!r) return;
+  const sess = (META.sessions || {})[r.sid] || {};
+  const miss = Math.max(0, r.p - r.ch);
+  const hitRate = r.p ? (r.ch / r.p * 100) : 0;
+  document.getElementById('dSub').textContent =
+    r.m + ' · ' + (r.hasCr === false ? '无积分记录' : '积分 ' + fmt(r.cr));
+
+  let html = '';
+  html += `<div class="dsec"><h4>基础信息</h4>
+    <div class="kv"><span class="k">时间</span><span class="v num">${fullTime(r.ts)}</span></div>
+    <div class="kv"><span class="k">会话</span><span class="v">${escapeHtml(sess.t || '（无标题）')}</span></div>
+    <div class="kv"><span class="k">目录</span><span class="v mono">${escapeHtml(sess.cwd || '—')}</span></div>
+    <div class="kv"><span class="k">Request ID</span><span class="v mono">${r.rid}</span></div>
+  </div>`;
+
+  html += `<div class="dsec"><h4>Token</h4>
+    <div class="kv"><span class="k">调用步数</span><span class="v num">${r.steps || 1} 次</span></div>
+    <div class="kv"><span class="k">输入合计</span><span class="v num">${fmtInt(r.p)}</span></div>
+    <div class="kv"><span class="k">其中缓存命中</span><span class="v num">${fmtInt(r.ch)}（${hitRate.toFixed(1)}%）</span></div>
+    <div class="kv"><span class="k">缓存未命中</span><span class="v num">${fmtInt(miss)}</span></div>
+    <div class="kv"><span class="k">输出</span><span class="v num">${fmtInt(r.c)}</span></div>
+    <div class="kv"><span class="k">其中推理 tokens</span><span class="v num">${fmtInt(r.rs || 0)}</span></div>
+    <div class="kv"><span class="k">合计</span><span class="v num">${fmtInt(r.p + r.c)}</span></div>
+  </div>`;
+
+  const peakLabel = r.peakMixed ? '跨峰谷' : (r.peak ? '高峰' : '空闲');
+  const peakCls = r.peak ? 'peak' : '';
+
+  if (r.fam && DATA.prices && DATA.prices[r.fam]) {
+    if ((r.steps || 1) > 1) {
+      html += `<div class="dsec"><h4>计费 <span class="badge ${peakCls}">${peakLabel}</span></h4>
+        <div class="calc">
+          <div class="line"><span>缓存命中 ${fmtInt(r.ch)} tokens</span><span></span></div>
+          <div class="line"><span>缓存未命中 ${fmtInt(miss)} tokens</span><span></span></div>
+          <div class="line"><span>输出 ${fmtInt(r.c)} tokens</span><span></span></div>
+          <div class="line sum"><span>合计（${r.steps} 次调用）</span><span>¥${yuan(r.cost)}</span></div>
+        </div>
+        <div style="color:#a8a8a8;font-size:11.5px;margin-top:6px;">这一轮包含 ${r.steps} 次 API 调用，每次都按自己发生的时刻判定峰谷，单价不同，因此不展开单一单价。</div>
+      </div>`;
+    } else {
+      const pr = DATA.prices[r.fam][r.peak ? 'peak' : 'off'];
+      const a = r.ch / 1e6 * pr.hit;
+      const b = miss / 1e6 * pr.miss;
+      const c2 = r.c / 1e6 * pr.out;
+      html += `<div class="dsec"><h4>计费拆解 <span class="badge ${peakCls}">${peakLabel}</span></h4>
+        <div class="calc">
+          <div class="line"><span>命中 ${fmtInt(r.ch)} × ¥${pr.hit}/M</span><span>¥${a.toFixed(4)}</span></div>
+          <div class="line"><span>未命中 ${fmtInt(miss)} × ¥${pr.miss}/M</span><span>¥${b.toFixed(4)}</span></div>
+          <div class="line"><span>输出 ${fmtInt(r.c)} × ¥${pr.out}/M</span><span>¥${c2.toFixed(4)}</span></div>
+          <div class="line sum"><span>合计</span><span>¥${yuan(r.cost)}</span></div>
+        </div>
+        <div style="color:#a8a8a8;font-size:11.5px;margin-top:6px;">峰谷按请求发生的北京时间判定，单位：元 / 百万 tokens。</div>
+      </div>`;
+    }
+  } else {
+    html += `<div class="dsec"><h4>计费</h4>
+      <div class="calc">该模型没有官方价目，金额无法折算，仅统计 token 与积分。</div></div>`;
+  }
+
+  html += `<div class="dsec"><h4>积分</h4>
+    <div class="kv"><span class="k">平台积分</span><span class="v num">${r.hasCr === false ? '未记录（该会话无积分快照）' : fmt(r.cr)}</span></div>
+    ${r.live ? '<div style="color:#a8a8a8;font-size:11.5px;margin-top:6px;">这一轮结束不到 10 分钟，日志与积分仍在写入，数值可能继续增加，稍后点「立即同步」可刷新。</div>' : ''}
+  </div>`;
+
+  html += `<div class="dsec"><h4>性能</h4>
+    <div class="kv"><span class="k">耗时</span><span class="v num">${r.dur ? r.dur.toFixed(1) + ' s' : '—'}</span></div>
+    <div class="kv"><span class="k">速度</span><span class="v num">${r.dur && r.c ? (r.c / r.dur).toFixed(0) + ' tok/s' : '—'}</span></div>
+    <div class="kv"><span class="k">首字</span><span class="v">未记录</span></div>
+  </div>`;
+
+  document.getElementById('drawerBody').innerHTML = html;
+  document.getElementById('drawer').classList.add('show');
+  document.getElementById('drawerMask').classList.add('show');
+  document.getElementById('drawer').setAttribute('aria-hidden', 'false');
+}
+
+function closeDrawer() {
+  document.getElementById('drawer').classList.remove('show');
+  document.getElementById('drawerMask').classList.remove('show');
+  document.getElementById('drawer').setAttribute('aria-hidden', 'true');
+}
+
+function renderAll() {
+  const rs = filtered();
+  renderKpis(rs);
+  renderCost(rs);
+  renderTable(rs);
+  try { renderChart(rs); } catch (e) { console.warn(e); }
+  document.getElementById('trendRange').textContent = rangeDays === 'all' ? '全部时间' : '近 ' + rangeDays + ' 天';
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('show'), 1900);
+}
+
+function rebuildLogModelSelect() {
+  const sel = document.getElementById('logModelFilter');
+  const keep = sel.value;
+  sel.innerHTML = '<option value="">全部模型</option>';
+  const all = (META.models || []).filter(m => m.req > 0);
+  const platform = all.filter(m => (m.billed || 0) > 0);
+  const custom = all.filter(m => !(m.billed > 0));
+  const addGroup = (label, list) => {
+    if (!list.length) return;
+    const g = document.createElement('optgroup');
+    g.label = label;
+    list.forEach(m => {
+      const o = document.createElement('option');
+      o.value = m.name;
+      o.textContent = m.name + '（' + m.req + ' 条）';
+      g.appendChild(o);
+    });
+    sel.appendChild(g);
+  };
+  addGroup('平台计费模型', platform);
+  addGroup('自定义 / 历史模型', custom);
+  if (keep && all.some(m => m.name === keep)) sel.value = keep;
+  else sel.value = '';
+  return sel;
+}
+
+let lastSync = Date.now();
+let autoTimer = null;
+
+function updateSyncHint() {
+  const el = document.getElementById('syncHint');
+  const dot = document.getElementById('syncDot');
+  if (!el) return;
+  const mins = Math.floor((Date.now() - lastSync) / 60000);
+  el.textContent = mins < 1 ? '刚刚同步' : (mins + ' 分钟前同步');
+  dot.style.background = mins < 2 ? '#22c55e' : (mins < 10 ? '#eab308' : '#d1d5db');
+}
+
+async function refresh(silent) {
+  if (location.protocol === 'file:') {
+    if (!silent) toast('这是静态快照，刷新请运行 python dashboard.py');
+    return;
+  }
+  const btn = document.getElementById('syncBtn');
+  const old = btn.textContent;
+  if (!silent) { btn.disabled = true; btn.textContent = '同步中…'; }
+  try {
+    const resp = await fetch('/api/refresh', { method: 'POST', cache: 'no-store' });
+    const d = await resp.json();
+    applyData(d);
+    rebuildLogModelSelect();
+    logFilter = document.getElementById('logModelFilter').value;
+    document.getElementById('genTime').textContent = d.generated;
+    renderAll();
+    lastSync = Date.now();
+    updateSyncHint();
+    if (!silent) toast('已刷新 ' + d.requests + ' 轮 · ¥' + (d.amount >= 1 ? d.amount.toFixed(2) : d.amount.toFixed(4)) + ' · 用时 ' + d.elapsed + 's');
+  } catch (e) {
+    toast('刷新失败：' + e.message);
+  } finally {
+    if (!silent) { btn.disabled = false; btn.textContent = old; }
+  }
+}
+
+(function init() {
+  applyData(DATA);
+  const gts = Date.parse((META.generated || '').replace(' ', 'T'));
+  lastSync = gts || Date.now();
+  const sel = rebuildLogModelSelect();
+  sel.addEventListener('change', e => { logFilter = e.target.value; renderTable(filtered()); });
+  const rf = document.getElementById('rangeFilter');
+  rf.value = '30';
+  rangeDays = 30;
+  rf.addEventListener('change', e => {
+    const v = e.target.value;
+    rangeDays = v === 'all' ? 'all' : Number(v);
+    renderAll();
+  });
+  const sf = document.getElementById('scopeFilter');
+  sf.value = 'billed';
+  sf.addEventListener('change', e => { scope = e.target.value; renderAll(); });
+  document.querySelectorAll('#metricSeg button').forEach(b => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('#metricSeg button').forEach(x => x.classList.remove('on'));
+      b.classList.add('on');
+      metric = b.dataset.m;
+      document.getElementById('legendName').textContent =
+        metric === 'amt' ? '金额' : metric === 'cr' ? '积分' : metric === 'req' ? '请求' : 'Tokens';
+      renderChart(filtered());
+    });
+  });
+  document.getElementById('syncBtn').addEventListener('click', () => refresh(false));
+  document.getElementById('autoBtn').addEventListener('click', () => {
+    const b = document.getElementById('autoBtn');
+    if (autoTimer) {
+      clearInterval(autoTimer); autoTimer = null;
+      b.textContent = '自动刷新';
+      b.style.color = '';
+      toast('已关闭自动刷新');
+    } else {
+      autoTimer = setInterval(() => refresh(true), 60000);
+      b.textContent = '自动刷新中（60 秒）';
+      b.style.color = '#0f6e56';
+      toast('已开启自动刷新，每 60 秒同步一次');
+      refresh(true);
+    }
+  });
+  setInterval(updateSyncHint, 15000);
+  updateSyncHint();
+  const ageMin = gts ? Math.floor((Date.now() - gts) / 60000) : 0;
+  if (ageMin >= 10 && location.protocol !== 'file:') {
+    setTimeout(() => toast('当前是 ' + ageMin + ' 分钟前的快照，点「立即同步」获取最新数据'), 700);
+  }
+  document.getElementById('drawerClose').addEventListener('click', closeDrawer);
+  document.getElementById('drawerMask').addEventListener('click', closeDrawer);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrawer(); });
+  document.getElementById('genTime').textContent = META.generated || '—';
+  renderAll();
+  let rt;
+  window.addEventListener('resize', () => {
+    clearTimeout(rt);
+    rt = setTimeout(() => { try { renderChart(lastRows); } catch (e) {} }, 120);
+  });
+})();
+</script>
+</body>
+</html>

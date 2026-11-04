@@ -1,0 +1,20 @@
+# 运行时产物（包含个人会话标题、本地路径，切勿提交）
+index.html
+dashboard-data.json
+.scan-cache.json
+
+# 历史中间数据
+.archive/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# 编辑器 / 系统
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
