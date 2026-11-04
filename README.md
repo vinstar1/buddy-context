@@ -73,22 +73,6 @@ python dashboard.py --data-dir D:/wb-data   # 指定数据目录
 - **数据滞后**：一轮对话结束后，日志与积分还会继续写入几分钟。刚聊完的那条可能偏小，会在表格里标「进行中」。
 - **依赖客户端内部格式**：`workbuddy.db` 的表结构和 jsonl 的字段不是公开 API，客户端升级后可能变。真变了就改 `parse_file()` 和 `load_credits()` 两个函数。
 
-## 换一台电脑能用吗
-
-能，只要那台电脑装了 WorkBuddy 并产生过数据：
-
-- 路径用的是 `Path.home() / ".workbuddy"`，Windows / macOS / Linux 都对
-- 没有硬编码盘符，没有第三方依赖，跨平台启动脚本各有一份
-- 时间统一按 UTC+8 判定峰谷（价格表是 DeepSeek 中国的，换区需自行调整 `BJ` 时区）
-
-如果那台机器上没有 WorkBuddy，程序仍能启动，只是会提示找不到数据目录并渲染一个空看板。
-
-## 隐私
-
-`index.html` 和 `dashboard-data.json` 里包含**真实的会话标题、工作目录、每条请求的 token 与花费**。这两个文件已写进 `.gitignore`，不要提交到公开仓库。`.scan-cache.json` 同理。
-
-本仓库只应包含：`dashboard.py`、`template.html`、`start.sh`、`start.bat`、`README.md`、`LICENSE`、`.gitignore`。
-
 ## License
 
 MIT
