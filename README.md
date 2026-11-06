@@ -4,10 +4,9 @@
 
 浏览器打开后是一个白底极简页面：四张指标卡、一张按日趋势图、一张模型成本表、一份可点开明细的请求日志。
 
-```
-<img width="1268" height="625" alt="image" src="https://github.com/user-attachments/assets/c2f7677b-92a2-4b42-93f9-a1e7a4ed9e34" />
+![WorkBuddy 用量看板截图](demo.png)
 
-```
+> 截图中的数字为示例数据，实际统计来自你本机 `~/.workbuddy` 下的用量记录。
 
 ## 数据从哪来
 
