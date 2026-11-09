@@ -21,3 +21,8 @@ venv/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# 小工具打包产物（.skill 为下载的第三方构建指南）
+.skill/
+dist/
+build/

@@ -15,7 +15,11 @@
 
   .topbar { display: flex; align-items: center; justify-content: space-between; height: 52px; padding: 0 20px; border-bottom: 1px solid #ececec; position: sticky; top: 0; background: #fff; z-index: 20; }
   .brand { display: flex; align-items: center; gap: 7px; }
-  .brand h1 { font-size: 15px; font-weight: 500; margin: 0; letter-spacing: .2px; }
+  .brand-main { display: flex; align-items: center; gap: 7px; min-width: 0; }
+  .plogo { width: 18px; height: 18px; flex: none; display: block; }
+  .pname { font-size: 14px; font-weight: 600; color: #111; letter-spacing: -.15px; }
+  .psep { width: 1px; height: 12px; background: #e6e6e6; flex: none; }
+  .brand h1 { font-size: 13px; font-weight: 400; color: #8f8f8f; margin: 0; letter-spacing: .2px; }
   .info { width: 13px; height: 13px; color: #b8b8b8; flex: none; }
   .top-actions { display: flex; align-items: center; gap: 6px; }
   .tbtn { display: inline-flex; align-items: center; gap: 5px; height: 28px; padding: 0 9px; border: 0; background: transparent; color: #5f5f5f; font-size: 12.5px; border-radius: 6px; cursor: pointer; font-family: inherit; white-space: nowrap; }
@@ -68,6 +72,9 @@
   tbody tr:hover td { background: #fafafa; }
   td.r { text-align: right; }
   td.time { color: #9a9a9a; font-size: 12px; }
+  td.time .t1 { display: inline-block; }
+  td.time .t2 { color: #c2c2c2; font-size: 11.5px; }
+  td.time .tag { margin-left: 5px; }
   .model { display: inline-flex; align-items: center; gap: 6px; }
   .mdot { width: 6px; height: 6px; border-radius: 50%; flex: none; }
   .dash { color: #c8c8c8; }
@@ -109,9 +116,78 @@
   .toast { position: fixed; left: 50%; bottom: 28px; transform: translate(-50%, 12px); background: #1a1a1a; color: #fff; font-size: 12.5px; padding: 8px 14px; border-radius: 7px; opacity: 0; pointer-events: none; transition: all .18s ease; z-index: 50; }
   .toast.show { opacity: 1; transform: translate(-50%, 0); }
 
+  /* ---------- 视图切换 ---------- */
+  .viewseg { margin-left: 14px; }
+  .viewseg button { height: 24px; padding: 0 11px; }
+
+  /* ---------- 进阶看板 ---------- */
+  .adv-grid { display: grid; grid-template-columns: minmax(300px, 368px) minmax(0, 1fr); gap: 14px; margin: 14px 20px 0; align-items: stretch; }
+  .card.in-grid { margin: 0; display: flex; flex-direction: column; }
+  .adv-scroll { max-height: 470px; overflow: auto; flex: 1; }
+  .kpi-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sub-hd { margin: 0 0 9px; font-size: 11.5px; font-weight: 400; color: #a0a0a0; letter-spacing: .2px; }
+  .cbar { width: 100%; max-width: 100%; height: 3px; border-radius: 2px; background: #f2f2f2; margin: 5px 0 1px auto; overflow: hidden; }
+  .cbar i { display: block; height: 100%; border-radius: 2px; background: #12a594; }
+  .tname { display: inline-block; max-width: 210px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; }
+  .sk { padding: 9px 0; border-bottom: 1px solid #f6f6f6; }
+  .sk:last-child { border-bottom: 0; }
+  .sk-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+  .sk-n { font-size: 12.5px; color: #1a1a1a; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sk-c { font-size: 12.5px; color: #1a1a1a; flex: none; }
+  .sk-bar { height: 4px; border-radius: 2px; background: #f3f3f3; margin: 7px 0 6px; overflow: hidden; }
+  .sk-bar i { display: block; height: 100%; border-radius: 2px; background: #12a594; }
+  .sk-meta { font-size: 11.5px; color: #a0a0a0; }
+  .cmd-chips { display: flex; align-items: center; gap: 14px; font-size: 12px; color: #9a9a9a; flex-wrap: wrap; justify-content: flex-end; }
+  .cmd-chips b { color: #1a1a1a; font-weight: 500; margin-right: 3px; }
+  .cmd-split { display: grid; grid-template-columns: 290px minmax(0, 1fr); gap: 22px; padding: 10px 16px 16px; }
+  .fam { display: flex; align-items: center; gap: 9px; padding: 4px 0; font-size: 12px; }
+  .fam .fn { width: 76px; flex: none; color: #4a4a4a; font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .fam .fb { flex: 1; height: 5px; border-radius: 3px; background: #f3f3f3; overflow: hidden; }
+  .fam .fb i { display: block; height: 100%; border-radius: 3px; background: #7fcfc4; }
+  .fam .fc { width: 42px; flex: none; text-align: right; color: #8f8f8f; }
+  .cmd-row { display: flex; gap: 10px; padding: 7px 0; border-bottom: 1px solid #f7f7f7; font-size: 12px; }
+  .cmd-row:last-child { border-bottom: 0; }
+  .cmd-time { flex: none; width: 72px; color: #a8a8a8; font-size: 11.5px; }
+  .cmd-body { flex: 1; min-width: 0; }
+  .cmd-text { display: block; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11.5px; color: #3a3a3a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cmd-sub { display: block; margin-top: 2px; color: #a8a8a8; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cmd-dd { flex: none; width: 52px; text-align: right; color: #9a9a9a; font-size: 11.5px; }
+  .bad { color: #b45309; }
+  .abar { transition: opacity .12s ease; }
+  .abar:hover { opacity: .75; }
+
+  @media (max-width: 1100px) {
+    .adv-grid { grid-template-columns: minmax(0,1fr); }
+    .cmd-split { grid-template-columns: minmax(0,1fr); }
+    .col-p95 { display: none; }
+  }
+
   @media (max-width: 900px) {
     .kpis { grid-template-columns: repeat(2, minmax(0,1fr)); }
     .top-actions .tbtn.opt { display: none; }
+    .viewseg { margin-left: 10px; }
+  }
+
+  @media (max-width: 720px) {
+    .topbar { height: auto; padding: 8px 12px; flex-wrap: wrap; gap: 8px; }
+    .brand { width: 100%; justify-content: space-between; }
+    .top-actions { width: 100%; justify-content: flex-end; }
+    .filterbar { padding: 10px 12px 2px; }
+    .kpis { padding: 12px 12px 0; }
+    .card { margin: 12px 12px 0; }
+    .adv-grid { margin: 12px 12px 0; }
+    .card-hd { flex-wrap: wrap; row-gap: 8px; }
+    .foot { padding: 12px 12px 24px; }
+    .tname { max-width: 130px; }
+    .cmd-split { padding-left: 12px; padding-right: 12px; gap: 14px; }
+  }
+
+  @media (max-width: 430px) {
+    .psep { display: none; }
+    .pname { font-size: 13px; }
+    .brand h1 { font-size: 12px; letter-spacing: 0; }
+    .viewseg { margin-left: 8px; }
+    .seg button { padding: 0 9px; }
   }
 </style>
 </head>
@@ -119,7 +195,27 @@
 
 <div class="topbar">
   <div class="brand">
-    <h1>用量统计</h1>
+    <div class="brand-main">
+      <svg class="plogo" width="18" height="18" viewBox="0 0 18 18" aria-hidden="true" focusable="false">
+        <defs>
+          <linearGradient id="plogoGrad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#18bda8"/>
+            <stop offset="1" stop-color="#0d8577"/>
+          </linearGradient>
+        </defs>
+        <rect width="18" height="18" rx="5" fill="url(#plogoGrad)"/>
+        <rect x="4.4" y="9.6" width="2.2" height="4" rx="1.1" fill="#fff"/>
+        <rect x="7.9" y="6.6" width="2.2" height="7" rx="1.1" fill="#fff"/>
+        <rect x="11.4" y="8.2" width="2.2" height="5.4" rx="1.1" fill="#fff"/>
+      </svg>
+      <span class="pname">buddy-context</span>
+      <span class="psep" aria-hidden="true"></span>
+      <h1>用量统计</h1>
+    </div>
+    <div class="seg viewseg" id="viewSeg">
+      <button class="on" data-v="usage">用量看板</button>
+      <button data-v="adv">进阶看板</button>
+    </div>
   </div>
   <div class="top-actions">
     <span class="tbtn" style="cursor:default"><span class="dot" id="syncDot"></span><span id="syncHint">刚刚同步</span></span>
@@ -140,6 +236,8 @@
     <option value="all">全部时间</option>
   </select>
 </div>
+
+<div id="viewUsage">
 
 <div class="kpis">
   <div class="kpi">
@@ -233,7 +331,7 @@
     <table>
       <thead>
         <tr>
-          <th style="width:104px">时间</th>
+          <th style="width:142px">时间</th>
           <th>模型</th>
           <th class="r" style="width:60px">步数</th>
           <th class="r" style="width:96px">新增输入</th>
@@ -255,8 +353,93 @@
 <div class="foot">
   <b>统计单位</b>是「一轮对话」：同一个 <span class="num">conversationRequestId</span> 下通常包含多次 API 调用（<span class="num">stepSeq</span>），token 与金额按步累加，积分取该轮合计（与客户端「共消耗」一致）。<br>
   <b>数据来源</b>：本机 <span class="num">~/.workbuddy/projects/*/*.jsonl</span> 中每条 assistant 消息的 <span class="num">providerData.rawUsage</span>，按 <span class="num">conversationRequestId</span> 与 <span class="num">session_usage.credit_json</span> 对账；积分优先取库内快照，缺失时用日志逐轮求和补齐。<br>
-  <b>金额</b>按 DeepSeek 官方价目折算（元），每一步按其发生时刻判定高峰/空闲；非 DeepSeek 模型没有官方价，金额留空。<b>积分</b>是平台计量单位，与人民币不是 1:1。<br>
+  <b>金额</b>按 DeepSeek 官方价目折算（元），每一步按其发生时刻判定高峰/空闲；非 DeepSeek 模型没有官方价，金额留空。<b>峰谷标记对所有模型生效</b>：列表时间列显示「开始 → 结束」，标「峰」表示每次调用都在高峰时段，标「峰 62%」表示这一轮只有部分调用落在高峰。<b>积分</b>是平台计量单位，与人民币不是 1:1。<br>
   <b>速度</b> = 输出 tokens ÷ 轮次时长，含工具调用与客户端开销，非模型纯净时延。<b>首字（TTFT）</b>：本地未记录，故留空。<b>快照</b> <span id="genTime">—</span>。
+</div>
+
+</div>
+
+<div id="viewAdv" hidden>
+  <div class="kpis" id="advKpis"></div>
+
+  <div class="card">
+    <div class="card-hd">
+      <div style="display:flex; align-items:center;">
+        <h2>调用趋势</h2>
+        <span class="muted" id="advTrendRange">近 30 天</span>
+        <span class="legend" style="margin-left:14px"><span class="sq" id="advLegendSq"></span><span id="advLegend">工具调用</span></span>
+      </div>
+      <div class="seg" id="advMetricSeg">
+        <button class="on" data-m="tool">工具</button>
+        <button data-m="cmd">命令</button>
+        <button data-m="skill">技能</button>
+      </div>
+    </div>
+    <div class="chart-wrap" id="advChartHost"></div>
+  </div>
+
+  <div class="adv-grid">
+    <div class="card in-grid">
+      <div class="tbl-hd">
+        <div class="left">
+          <h2>技能概览</h2>
+          <span class="chip" id="advSkillChip">—</span>
+        </div>
+      </div>
+      <div style="padding:2px 16px 12px" id="advSkillBody" class="adv-scroll"></div>
+    </div>
+
+    <div class="card in-grid">
+      <div class="tbl-hd">
+        <div class="left">
+          <h2>工具概览</h2>
+          <span class="chip" id="advToolChip">—</span>
+        </div>
+        <span class="chip">按调用次数排序</span>
+      </div>
+      <div class="adv-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>工具</th>
+              <th class="r" style="width:104px">调用</th>
+              <th class="r" style="width:62px">会话</th>
+              <th class="r" style="width:86px">平均耗时</th>
+              <th class="r col-p95" style="width:76px">P95</th>
+              <th class="r" style="width:74px">完成率</th>
+            </tr>
+          </thead>
+          <tbody id="advToolBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="tbl-hd">
+      <div class="left">
+        <h2>命令执行</h2>
+        <span class="chip">Bash / 终端</span>
+      </div>
+      <div class="cmd-chips" id="advCmdChips"></div>
+    </div>
+    <div class="cmd-split">
+      <div>
+        <h4 class="sub-hd">命令族分布</h4>
+        <div id="advFamBody"></div>
+      </div>
+      <div>
+        <h4 class="sub-hd">最近执行</h4>
+        <div id="advCmdBody"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <b>数据来源</b>：本机 <span class="num">~/.workbuddy/projects/*/*.jsonl</span> 里的 <span class="num">function_call</span> 与 <span class="num">function_call_result</span> 记录，两者按 <span class="num">callId</span> 配对，差值即为这次调用的耗时。<br>
+    <b>三类互不重叠</b>：<b>技能</b> = <span class="num">Skill</span> 调用；<b>命令</b> = <span class="num">Bash</span> 与终端命令；<b>工具</b> = 其余全部函数调用（含 MCP，<span class="num">DeferExecuteTool</span> 按真实工具名归并）。<br>
+    <b>完成率</b> = 状态为 completed 的结果数 ÷ 有结果的调用数，被中断或无结果的调用不计入分母。<b>命令族</b>取命令的首个可执行名，自动剥离开头的 <span class="num">cd … &&</span>、环境变量与 <span class="num">sudo</span>。<b>快照</b> <span id="advGenTime">—</span>。
+  </div>
 </div>
 
 <div class="drawer-mask" id="drawerMask"></div>
@@ -301,9 +484,31 @@ const pad = x => String(x).padStart(2, '0');
 const escapeHtml = s => String(s === null || s === undefined ? '' : s)
   .replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const dateOf = ts => { const d = new Date(ts); return pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()); };
+const hhmm = ts => { const d = new Date(ts); return pad(d.getHours()) + ':' + pad(d.getMinutes()); };
+const shortDate = ts => { const d = new Date(ts); return pad(d.getMonth() + 1) + '-' + pad(d.getDate()); };
 const money = n => n === null || n === undefined ? null : (n >= 1 ? n.toFixed(2) : n.toFixed(4));
 
+function fmtDur(s) {
+  if (s === null || s === undefined || isNaN(s)) return '—';
+  if (s < 0.001) return '0ms';
+  if (s < 1) return Math.round(s * 1000) + 'ms';
+  if (s < 60) return (s < 10 ? s.toFixed(1) : String(Math.round(s))) + 's';
+  const m = Math.floor(s / 60), sec = Math.round(s % 60);
+  if (m < 60) return m + 'm' + (sec ? ' ' + sec + 's' : '');
+  return Math.floor(m / 60) + 'h ' + (m % 60) + 'm';
+}
+
+// MCP 工具名太长，榜上只留「服务 · 方法」，完整名字放在 title 里
+function prettyTool(n) {
+  if (n && n.indexOf('mcp__') === 0) {
+    const p = n.slice(5).split('__');
+    return p.length > 1 ? p[0] + ' · ' + p.slice(1).join('__') : p[0];
+  }
+  return n;
+}
+
 let metric = 'amt', logFilter = '', rangeDays = 30, scope = 'billed', lastRows = [];
+let view = 'usage', advMetric = 'tool';
 
 let rows = [], maxTs = 0, minTs = 0, META = {};
 
@@ -329,11 +534,13 @@ function renderKpis(rs) {
   const cr = sum(rs, 'cr'), p = sum(rs, 'p'), c = sum(rs, 'c'), ch = sum(rs, 'ch');
   const amt = sum(rs, 'cost');
   const priced = rs.filter(r => r.cost !== null && r.cost !== undefined);
-  const peakN = rs.filter(r => r.peak === true).length;
+  const amtPeak = sum(rs, 'costPeak'), amtOff = sum(rs, 'costOff');
   const days = new Set(rs.map(r => new Date(r.ts).toDateString())).size || 1;
   document.getElementById('kpiAmount').innerHTML = '¥' + (amt >= 1 ? amt.toFixed(2) : amt.toFixed(4));
   document.getElementById('kpiAmountSub').textContent =
-    priced.length ? '覆盖 ' + priced.length + ' 轮 DeepSeek 对话 · 其中全高峰 ' + peakN + ' 轮' : '无 DeepSeek 请求';
+    priced.length
+      ? priced.length + ' 轮 · 高峰 ¥' + money(amtPeak) + ' / 空闲 ¥' + money(amtOff)
+      : '无 DeepSeek 请求';
   document.getElementById('kpiReq').textContent = fmtInt(rs.length);
   const billed = rs.filter(r => r.hasCr !== false).length;
   const steps = rs.reduce((a, r) => a + (r.steps || 0), 0);
@@ -441,8 +648,7 @@ function renderTable(rs) {
   const tb = document.getElementById('tbody');
   const list = rs
     .filter(r => !logFilter || r.m === logFilter)
-    .sort((a, b) => b.ts - a.ts);
-  document.getElementById('chipCount').textContent = list.length + ' 条';
+    .sort((a, b) => b.ts - a.ts);  document.getElementById('chipCount').textContent = list.length + ' 条';
   const empty = document.getElementById('empty');
   empty.style.display = list.length ? 'none' : 'block';
   if (!list.length && logFilter) {
@@ -454,8 +660,17 @@ function renderTable(rs) {
     const hit = r.p ? (r.ch / r.p * 100) : 0;
     const speed = r.dur && r.c ? r.c / r.dur : 0;
     const priced = r.cost !== null && r.cost !== undefined;
+    const t0 = r.ts0 || r.ts;
+    const span = Math.floor(t0 / 60000) === Math.floor(r.ts / 60000)
+      ? ''
+      : '<span class="t2">-' + (shortDate(t0) === shortDate(r.ts) ? hhmm(r.ts) : dateOf(r.ts)) + '</span>';
+    const peakTag = r.peak
+      ? '<span class="tag" title="这一轮的每次调用都落在高峰时段">峰</span>'
+      : (r.peakMixed
+        ? `<span class="tag" title="共 ${r.steps || 1} 次调用，其中 ${r.peakSteps || 0} 次在高峰时段">峰 ${Math.round((r.peakSteps || 0) / (r.steps || 1) * 100)}%</span>`
+        : '');
     return `<tr class="rowlink" data-rid="${r.rid}">
-      <td class="time num">${dateOf(r.ts)}${r.peak ? '<span class="tag" style="margin-left:4px">峰</span>' : ''}${r.live ? '<span class="tag muted" style="margin-left:4px" title="最近 10 分钟内仍在写入，积分可能继续增加">进行中</span>' : ''}</td>
+      <td class="time num"><span class="t1">${dateOf(t0)}</span>${span}${peakTag}${r.live ? '<span class="tag muted" style="margin-left:4px" title="最近 10 分钟内仍在写入，积分可能继续增加">进行中</span>' : ''}</td>
       <td><span class="model"><span class="mdot" style="background:${colorOf(r.m)}"></span>${r.m}</span></td>
       <td class="r num">${r.steps || 1}</td>
       <td class="r num">${fmtTok(r.p)}</td>
@@ -473,8 +688,171 @@ function renderTable(rs) {
   });
 }
 
-const WEEK = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
-function fullTime(ts) {
+/* ---------- 进阶看板：技能 / 工具 / 命令 ---------- */
+
+const ADV_META = {
+  tool: { label: '工具调用', color: '#12a594' },
+  cmd: { label: '命令执行', color: '#3fbfae' },
+  skill: { label: '技能调用', color: '#8d8bd6' }
+};
+
+function advWin() {
+  const a = META.adv;
+  if (!a || !a.windows) return null;
+  return a.windows[String(rangeDays)] || a.windows['30'] || null;
+}
+
+function drawBars(host, labels, values, color, unit) {
+  const W = Math.max(320, host.clientWidth || 900);
+  const H = host.clientHeight || 152;
+  const padL = 44, padR = 12, padT = 12, padB = 22;
+  const plotW = Math.max(10, W - padL - padR), plotH = Math.max(10, H - padT - padB);
+  const n = values.length || 1;
+  const peak = Math.max(1, ...values), top = peak * 1.18;
+  const slot = plotW / n, bw = Math.max(2, Math.min(22, slot * 0.5));
+  const yOf = v => padT + plotH - (v / top) * plotH;
+  const parts = [];
+  [0, top / 2, top].forEach(t => {
+    const yy = yOf(t);
+    parts.push('<line x1="' + padL + '" y1="' + yy.toFixed(1) + '" x2="' + (W - padR) + '" y2="' + yy.toFixed(1) + '" stroke="#f2f2f2" stroke-width="1"/>');
+    parts.push('<text x="' + (padL - 10) + '" y="' + (yy + 3.5).toFixed(1) + '" text-anchor="end" font-size="10.5" fill="#a0a0a0">' + fmtAxis(t) + '</text>');
+  });
+  values.forEach((v, i) => {
+    const h = (v / top) * plotH;
+    if (h <= 0) return;
+    const x = padL + slot * i + (slot - bw) / 2;
+    parts.push('<rect class="abar" x="' + x.toFixed(1) + '" y="' + (padT + plotH - h).toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + h.toFixed(1) + '" rx="1.5" fill="' + color + '"><title>' + labels[i] + ' · ' + unit + ' ' + fmtInt(v) + '</title></rect>');
+  });
+  const stepX = Math.max(1, Math.ceil(n / 12));
+  labels.forEach((lb, i) => {
+    if (i % stepX !== 0) return;
+    parts.push('<text x="' + (padL + slot * i + slot / 2).toFixed(1) + '" y="' + (H - 6) + '" text-anchor="middle" font-size="10.5" fill="#a0a0a0">' + lb + '</text>');
+  });
+  host.innerHTML = '<svg width="100%" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" role="img">' + parts.join('') + '</svg>';
+}
+
+function renderAdvChart(w) {
+  const host = document.getElementById('advChartHost');
+  if (!host) return;
+  const meta = ADV_META[advMetric] || ADV_META.tool;
+  document.getElementById('advLegend').textContent = meta.label;
+  document.getElementById('advLegendSq').style.background = meta.color;
+  const daily = w.daily || [];
+  if (!daily.length) { host.innerHTML = '<div class="empty">范围内没有记录</div>'; return; }
+  const labels = daily.map(d => d.d.slice(5).replace('-', '/'));
+  const values = daily.map(d => d[advMetric] || 0);
+  drawBars(host, labels, values, meta.color, meta.label);
+}
+
+function renderAdvSkills(w) {
+  const list = w.skills || [];
+  document.getElementById('advSkillChip').textContent =
+    fmtInt(w.kpi.skillCalls) + ' 次 · ' + list.length + ' 个';
+  const body = document.getElementById('advSkillBody');
+  if (!list.length) { body.innerHTML = '<div class="empty" style="padding:26px 0">范围内没有技能调用</div>'; return; }
+  const max = Math.max(...list.map(s => s.c)) || 1;
+  body.innerHTML = list.map(s => `<div class="sk">
+      <div class="sk-top"><span class="sk-n" title="${escapeHtml(s.n)}">${escapeHtml(s.n)}</span><span class="sk-c num">${s.c}</span></div>
+      <div class="sk-bar"><i style="width:${(s.c / max * 100).toFixed(1)}%"></i></div>
+      <div class="sk-meta num">${s.s} 个会话 · 最近 ${s.last ? shortDate(s.last) : '—'}${s.avg ? ' · 加载 ' + fmtDur(s.avg) : ''}</div>
+    </div>`).join('');
+}
+
+function renderAdvTools(w) {
+  const list = w.tools || [];
+  document.getElementById('advToolChip').textContent = list.length + ' 种 · ' + fmtInt(w.kpi.toolCalls) + ' 次';
+  const body = document.getElementById('advToolBody');
+  if (!list.length) {
+    body.innerHTML = '<tr><td colspan="6" class="empty">范围内没有工具调用</td></tr>';
+    return;
+  }
+  const max = list[0].c || 1;
+  body.innerHTML = list.map(t => {
+    const known = (t.ok || 0) + (t.bad || 0);
+    const rate = known ? (t.ok / known * 100) : null;
+    return `<tr>
+      <td><span class="model" title="${escapeHtml(t.n)}"><span class="mdot" style="background:#12a594"></span><span class="tname">${escapeHtml(prettyTool(t.n))}</span></span></td>
+      <td class="r num">${fmtInt(t.c)} <span style="color:#bdbdbd">${t.share}%</span><div class="cbar"><i style="width:${(t.c / max * 100).toFixed(1)}%"></i></div></td>
+      <td class="r num">${t.s}</td>
+      <td class="r num">${fmtDur(t.avg)}</td>
+      <td class="r num col-p95">${fmtDur(t.p95)}</td>
+      <td class="r num">${rate === null ? '<span class="dash">—</span>' : (rate >= 99.95 ? '100%' : rate.toFixed(1) + '%')}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderAdvCmds(w) {
+  const c = w.cmd || { total: 0, bash: 0, shell: 0, fail: 0, avg: 0, families: [], recent: [] };
+  document.getElementById('advCmdChips').innerHTML =
+    '<span>Bash <b>' + fmtInt(c.bash || 0) + '</b></span>' +
+    '<span>终端 <b>' + fmtInt(c.shell || 0) + '</b></span>' +
+    '<span>失败 <b>' + fmtInt(c.fail || 0) + '</b></span>' +
+    '<span>平均 <b>' + fmtDur(c.avg) + '</b></span>';
+
+  const fams = c.families || [];
+  const famHost = document.getElementById('advFamBody');
+  if (!fams.length) {
+    famHost.innerHTML = '<div class="empty" style="padding:20px 0">—</div>';
+  } else {
+    const fmax = fams[0].c || 1;
+    famHost.innerHTML = fams.map(f => `<div class="fam">
+        <span class="fn" title="${escapeHtml(f.n)}">${escapeHtml(f.n)}</span>
+        <span class="fb"><i style="width:${(f.c / fmax * 100).toFixed(1)}%"></i></span>
+        <span class="fc num">${fmtInt(f.c)}</span>
+      </div>`).join('');
+  }
+
+  const rec = c.recent || [];
+  const recHost = document.getElementById('advCmdBody');
+  if (!rec.length) { recHost.innerHTML = '<div class="empty" style="padding:20px 0">范围内没有命令记录</div>'; return; }
+  recHost.innerHTML = rec.map(r => `<div class="cmd-row">
+      <span class="cmd-time num">${shortDate(r.ts)} ${pad(new Date(r.ts).getHours())}:${pad(new Date(r.ts).getMinutes())}</span>
+      <span class="cmd-body">
+        <span class="cmd-text" title="${escapeHtml(r.cmd)}">${escapeHtml(r.cmd)}</span>
+        <span class="cmd-sub">${escapeHtml(r.desc || '—')}${r.ok === false ? ' · <span class="bad">失败</span>' : ''}</span>
+      </span>
+      <span class="cmd-dd num">${r.d ? fmtDur(r.d) : '—'}</span>
+    </div>`).join('');
+}
+
+function renderAdv() {
+  const w = advWin();
+  const host = document.getElementById('advKpis');
+  if (!host) return;
+  if (!w) { host.innerHTML = '<div class="empty">暂无进阶数据，点「立即同步」重新扫描</div>'; return; }
+  const k = w.kpi;
+  const top = (w.tools && w.tools[0]) || null;
+  const topName = top ? prettyTool(top.n) : '—';
+  const topSize = topName.length > 14 ? 16 : (topName.length > 10 ? 19 : 23);
+  host.innerHTML = `<div class="kpi">
+      <div class="label">工具调用</div>
+      <div class="value num">${fmtInt(k.toolCalls)}<span class="unit">次</span></div>
+      <div class="sub num">${k.toolNames} 种工具 · 完成率 ${k.okRate.toFixed(1)}%</div>
+    </div>
+    <div class="kpi">
+      <div class="label">命令执行</div>
+      <div class="value num">${fmtInt(k.cmdCalls)}<span class="unit">次</span></div>
+      <div class="sub num">Bash ${fmtInt(k.cmdBash)} · 终端 ${fmtInt(k.cmdShell)} · 失败 ${fmtInt(k.cmdFail)}</div>
+    </div>
+    <div class="kpi">
+      <div class="label">技能调用</div>
+      <div class="value num">${fmtInt(k.skillCalls)}<span class="unit">次</span></div>
+      <div class="sub num">${k.skillNames} 个技能 · 覆盖 ${k.sessions} 个会话</div>
+    </div>
+    <div class="kpi">
+      <div class="label">最常用工具</div>
+      <div class="value kpi-name" style="font-size:${topSize}px" title="${top ? escapeHtml(top.n) : ''}">${escapeHtml(topName)}</div>
+      <div class="sub num">${top ? fmtInt(top.c) + ' 次 · 占 ' + top.share + '% · 平均 ' + fmtDur(top.avg) : '—'}</div>
+    </div>`;
+  document.getElementById('advTrendRange').textContent = rangeDays === 'all' ? '全部时间' : '近 ' + rangeDays + ' 天';
+  renderAdvChart(w);
+  renderAdvSkills(w);
+  renderAdvTools(w);
+  renderAdvCmds(w);
+  document.getElementById('advGenTime').textContent = META.generated || '—';
+}
+
+const WEEK = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];function fullTime(ts) {
   const d = new Date(ts);
   return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + ' '
     + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds()) + ' · ' + WEEK[d.getDay()];
@@ -510,6 +888,7 @@ function openDetail(rid) {
 
   const peakLabel = r.peakMixed ? '跨峰谷' : (r.peak ? '高峰' : '空闲');
   const peakCls = r.peak ? 'peak' : '';
+  const pSteps = r.peakSteps || 0, oSteps = (r.steps || 1) - pSteps;
 
   if (r.fam && DATA.prices && DATA.prices[r.fam]) {
     if ((r.steps || 1) > 1) {
@@ -518,6 +897,7 @@ function openDetail(rid) {
           <div class="line"><span>缓存命中 ${fmtInt(r.ch)} tokens</span><span></span></div>
           <div class="line"><span>缓存未命中 ${fmtInt(miss)} tokens</span><span></span></div>
           <div class="line"><span>输出 ${fmtInt(r.c)} tokens</span><span></span></div>
+          <div class="line"><span>高峰 ${pSteps} 次 · 空闲 ${oSteps} 次</span><span>高峰 ¥${money(r.costPeak)} / 空闲 ¥${money(r.costOff)}</span></div>
           <div class="line sum"><span>合计（${r.steps} 次调用）</span><span>¥${yuan(r.cost)}</span></div>
         </div>
         <div style="color:#a8a8a8;font-size:11.5px;margin-top:6px;">这一轮包含 ${r.steps} 次 API 调用，每次都按自己发生的时刻判定峰谷，单价不同，因此不展开单一单价。</div>
@@ -538,8 +918,11 @@ function openDetail(rid) {
       </div>`;
     }
   } else {
-    html += `<div class="dsec"><h4>计费</h4>
-      <div class="calc">该模型没有官方价目，金额无法折算，仅统计 token 与积分。</div></div>`;
+    html += `<div class="dsec"><h4>计费 <span class="badge ${peakCls}">${peakLabel}</span></h4>
+      <div class="calc">
+        <div class="line"><span>这一轮 ${r.steps || 1} 次调用，其中高峰 ${pSteps} 次</span><span></span></div>
+      </div>
+      <div style="color:#a8a8a8;font-size:11.5px;margin-top:6px;">该模型没有官方价目，金额无法折算，仅统计 token 与积分；峰谷时段仍按北京时间标记。</div></div>`;
   }
 
   html += `<div class="dsec"><h4>积分</h4>
@@ -572,6 +955,28 @@ function renderAll() {
   renderTable(rs);
   try { renderChart(rs); } catch (e) { console.warn(e); }
   document.getElementById('trendRange').textContent = rangeDays === 'all' ? '全部时间' : '近 ' + rangeDays + ' 天';
+  if (view === 'adv') { try { renderAdv(); } catch (e) { console.warn(e); } }
+}
+
+// 两个视图共用一个页面、同一份数据：切换只改 DOM 可见性，不重新请求
+function setView(v, fromHash) {
+  view = v === 'adv' ? 'adv' : 'usage';
+  document.querySelectorAll('#viewSeg button').forEach(b => b.classList.toggle('on', b.dataset.v === view));
+  document.getElementById('viewUsage').hidden = view !== 'usage';
+  document.getElementById('viewAdv').hidden = view !== 'adv';
+  document.getElementById('scopeFilter').style.display = view === 'usage' ? '' : 'none';
+  if (!fromHash) {
+    const h = view === 'adv' ? '#adv' : '#usage';
+    if (location.hash !== h) {
+      try { history.replaceState(null, '', h); } catch (e) { location.hash = h; }
+    }
+  }
+  if (view === 'adv') {
+    try { renderAdv(); } catch (e) { console.warn(e); }
+  } else {
+    // 隐藏期间容器宽度为 0，回来时按真实宽度重绘一次
+    try { renderChart(filtered()); } catch (e) { console.warn(e); }
+  }
 }
 
 function toast(msg) {
@@ -671,6 +1076,21 @@ async function refresh(silent) {
       renderChart(filtered());
     });
   });
+  document.querySelectorAll('#advMetricSeg button').forEach(b => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('#advMetricSeg button').forEach(x => x.classList.remove('on'));
+      b.classList.add('on');
+      advMetric = b.dataset.m;
+      const w = advWin();
+      if (w) renderAdvChart(w);
+    });
+  });
+  document.querySelectorAll('#viewSeg button').forEach(b => {
+    b.addEventListener('click', () => setView(b.dataset.v));
+  });
+  window.addEventListener('hashchange', () => {
+    setView(location.hash.replace('#', '') === 'adv' ? 'adv' : 'usage', true);
+  });
   document.getElementById('syncBtn').addEventListener('click', () => refresh(false));
   document.getElementById('autoBtn').addEventListener('click', () => {
     const b = document.getElementById('autoBtn');
@@ -698,10 +1118,17 @@ async function refresh(silent) {
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrawer(); });
   document.getElementById('genTime').textContent = META.generated || '—';
   renderAll();
+  setView(location.hash.replace('#', '') === 'adv' ? 'adv' : 'usage', true);
   let rt;
   window.addEventListener('resize', () => {
     clearTimeout(rt);
-    rt = setTimeout(() => { try { renderChart(lastRows); } catch (e) {} }, 120);
+    rt = setTimeout(() => {
+      try { renderChart(lastRows); } catch (e) {}
+      if (view === 'adv') {
+        const w = advWin();
+        if (w) { try { renderAdvChart(w); } catch (e) {} }
+      }
+    }, 120);
   });
 })();
 </script>

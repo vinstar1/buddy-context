@@ -4,6 +4,10 @@
 本地用量看板 —— 扫描 WorkBuddy 本机数据，按 DeepSeek 官方价目折算金额，
 并提供一个可手动刷新的本地服务。
 
+两个视图共用一份快照：
+    用量看板：token / 缓存 / 积分 / 金额 / 每轮耗时
+    进阶看板：只统计技能（Skill）、工具（其余函数调用）、命令（Bash / 终端）
+
 用法:
     python dashboard.py            # 启动服务并打开浏览器 (http://127.0.0.1:8765)
     python dashboard.py --once     # 只重算并写出一份静态快照 index.html
@@ -11,6 +15,7 @@
 
 数据来源:
     ~/.workbuddy/projects/*/*.jsonl          每条请求的 rawUsage (token / 缓存 / credit)
+                                             以及 function_call / function_call_result
     ~/.workbuddy/workbuddy.db                 session_usage.credit_json (积分对账)
 
 计价说明:
@@ -26,6 +31,7 @@ import datetime as dt
 import glob
 import json
 import os
+import re
 import sqlite3
 import statistics
 import sys
@@ -64,8 +70,12 @@ PRICES = {
 HOLIDAYS = set()
 
 BJ = dt.timezone(dt.timedelta(hours=8))
-CACHE = {"version": 3, "files": {}}
+CACHE = {"version": 4, "files": {}}
 LOCK = threading.Lock()
+DAY_MS = 86400000
+
+# 会被归入「命令」而不是「工具」的 shell 工具名
+SHELL_TOOLS = ("Bash", "PowerShell")
 
 
 def family_of(model):
@@ -105,20 +115,58 @@ def to_ms(value):
     return None
 
 
+def tool_event(obj, ts):
+    """把一条 function_call 压成紧凑事件，供进阶看板聚合。
+
+    DeferExecuteTool 会拆出真实工具名（MCP / ImageGen 等），否则工具榜上只会看到
+    一层没有信息量的「代调用」壳子。
+    """
+    name = obj.get("name") or "未知"
+    args = obj.get("arguments")
+    if isinstance(args, str):
+        try:
+            args = json.loads(args)
+        except Exception:
+            args = {}
+    if not isinstance(args, dict):
+        args = {}
+    kind, cmd, desc, skill = "tool", "", "", ""
+    if name == "DeferExecuteTool":
+        inner = args.get("toolName")
+        if isinstance(inner, str) and inner.strip():
+            name = inner.strip()
+    if name in SHELL_TOOLS:
+        kind = "cmd"
+        cmd = (args.get("command") or "").strip()[:400]
+        desc = (args.get("description") or "").strip()[:120]
+    elif name == "Skill":
+        kind = "skill"
+        skill = (args.get("skill") or args.get("name") or "").strip()[:80] or "未命名技能"
+    return {
+        "t": ts, "n": name, "k": kind, "d": None, "ok": None,
+        "s": obj.get("sessionId") or "", "c": cmd, "x": desc, "sk": skill,
+    }
+
+
 def parse_file(path):
-    """抽取一个 jsonl 里所有带 rawUsage 的 step。
+    """抽取一个 jsonl 里所有带 rawUsage 的 step，以及全部工具调用事件。
 
     注意：conversationRequestId 对应的是「一轮对话」，里面往往包含几十次 API 调用
     （同一个 rid、不同 stepSeq）。所以这里以 (rid, stepSeq) 为单位去重，
     保留 token 最完整的一版，后续再按 rid 汇总成一轮。
     单步时长 = 本条时间 - 上一条事件时间（含客户端与工具回调开销）。
+
+    工具调用单独收集：function_call 提供工具名与入参，function_call_result
+    提供状态；两者用 callId 配对，差值即这次调用的耗时。
     """
     out = {}
+    tools = []
+    by_call = {}
     prev_ts = None
     try:
         fh = open(path, encoding="utf-8", errors="ignore")
     except OSError:
-        return out
+        return out, tools
     with fh:
         for line in fh:
             try:
@@ -126,6 +174,24 @@ def parse_file(path):
             except Exception:
                 continue
             ts = to_ms(obj.get("timestamp"))
+            typ = obj.get("type")
+            # 工具事件：和用量统计共用一次读取，但不要 continue——
+            # 这个版本的 function_call 记录同时携带 rawUsage，跳过去会漏掉绝大部分 token。
+            if typ == "function_call":
+                if ts:
+                    ev = tool_event(obj, ts)
+                    tools.append(ev)
+                    cid = obj.get("callId")
+                    if cid:
+                        by_call[cid] = ev
+            elif typ == "function_call_result":
+                if ts:
+                    ev = by_call.pop(obj.get("callId"), None)
+                    if ev is not None:
+                        gap = (ts - ev["t"]) / 1000.0
+                        if 0 <= gap < 1800:
+                            ev["d"] = round(gap, 2)
+                        ev["ok"] = obj.get("status") == "completed"
             pd = obj.get("providerData") or {}
             ru = pd.get("rawUsage")
             if not ru:
@@ -162,7 +228,7 @@ def parse_file(path):
                     item["dur"] = old["dur"]
                 out[key] = item
             prev_ts = ts
-    return list(out.values())
+    return list(out.values()), tools
 
 
 def scan_requests(force=False):
@@ -178,6 +244,7 @@ def scan_requests(force=False):
     files = sorted(glob.glob(str(WB / "projects" / "*" / "*.jsonl")))
     new_files = {}
     merged = {}
+    events = []
     changed = 0
     for path in files:
         try:
@@ -188,16 +255,18 @@ def scan_requests(force=False):
         entry = CACHE["files"].get(path)
         if entry and entry.get("sig") == [int(st.st_mtime), st.st_size]:
             items = entry.get("items", [])
+            tev = entry.get("tools", [])
         else:
-            items = parse_file(path)
+            items, tev = parse_file(path)
             changed += 1
-            entry = {"sig": [int(st.st_mtime), st.st_size], "items": items}
+            entry = {"sig": [int(st.st_mtime), st.st_size], "items": items, "tools": tev}
         new_files[path] = entry
         for it in items:
             k = "%s#%s" % (it["rid"], it.get("step"))
             old = merged.get(k)
             if not old or (it["p"] + it["c"]) >= (old["p"] + old["c"]):
                 merged[k] = it
+        events.extend(tev)
 
     CACHE["files"] = new_files
     try:
@@ -205,7 +274,7 @@ def scan_requests(force=False):
     except OSError:
         pass
 
-    return merged, len(files), changed
+    return merged, events, len(files), changed
 
 
 def load_credits():
@@ -256,11 +325,194 @@ def load_session_titles():
     return out
 
 
+def day_start(ts):
+    d = dt.datetime.fromtimestamp(ts / 1000, BJ).replace(hour=0, minute=0, second=0, microsecond=0)
+    return int(d.timestamp() * 1000)
+
+
+def day_key(ts):
+    return dt.datetime.fromtimestamp(ts / 1000, BJ).strftime("%Y-%m-%d")
+
+
+def cmd_family(cmd):
+    """取命令的首个可执行名：剥掉开头的 cd / 环境变量 / sudo，路径只留文件名。"""
+    s = (cmd or "").strip()
+    for _ in range(3):
+        m = re.match(r"^cd\s+(?:\"[^\"]*\"|'[^']*'|\S+)\s*(?:&&|;|\|\|)\s*", s)
+        if not m:
+            break
+        s = s[m.end():]
+    s = re.sub(r"^(?:[A-Za-z_][A-Za-z0-9_]*=\S+\s+)+", "", s)
+    s = re.sub(r"^(?:sudo|time|nohup|env|exec)\s+", "", s)
+    s = s.lstrip("([{ \t")
+    m = re.match(r"[^\s|&;<>]+", s)
+    tok = m.group(0) if m else ""
+    tok = tok.strip("\"'`").replace("\\", "/").split("/")[-1]
+    if tok.lower().endswith(".exe"):
+        tok = tok[:-4]
+    low = tok.lower()
+    if low in ("for", "while", "until"):
+        return "shell 循环"
+    if low in ("if", "then", "case", "test"):
+        return "shell 判断"
+    for base in ("python", "node", "npm", "npx", "pnpm", "yarn", "pip", "docker", "git"):
+        if low.startswith(base):
+            return base
+    return tok or "其他"
+
+
+def _stats(vals):
+    """返回 (平均, 最大, P95)，单位秒。"""
+    if not vals:
+        return 0, 0, 0
+    s = sorted(vals)
+    avg = round(sum(s) / len(s), 2)
+    p95 = round(s[min(len(s) - 1, int(len(s) * 0.95))], 2)
+    return avg, round(s[-1], 2), p95
+
+
+def _window(evs, start, ndays):
+    """把一段时间内的事件聚成技能 / 工具 / 命令三块。三类互不重叠。"""
+    tools = collections.defaultdict(lambda: {"c": 0, "s": set(), "ok": 0, "bad": 0, "d": []})
+    skills = collections.defaultdict(lambda: {"c": 0, "s": set(), "d": [], "last": 0})
+    fams = collections.Counter()
+    cmd = {"total": 0, "bash": 0, "shell": 0, "fail": 0, "d": []}
+    daily = collections.defaultdict(lambda: {"tool": 0, "skill": 0, "cmd": 0})
+    sessions = set()
+    recent = []
+
+    for e in evs:
+        sid = e.get("s") or ""
+        if sid:
+            sessions.add(sid)
+        bucket = daily[day_key(e["t"])]
+        kind = e.get("k")
+        if kind == "cmd":
+            cmd["total"] += 1
+            if e["n"] == "Bash":
+                cmd["bash"] += 1
+            else:
+                cmd["shell"] += 1
+            if e.get("ok") is False:
+                cmd["fail"] += 1
+            if e.get("d"):
+                cmd["d"].append(e["d"])
+            fams[cmd_family(e.get("c"))] += 1
+            bucket["cmd"] += 1
+            recent.append(e)
+            continue
+        if kind == "skill":
+            a = skills[e.get("sk") or "未命名技能"]
+            a["c"] += 1
+            a["last"] = max(a["last"], e["t"])
+            if sid:
+                a["s"].add(sid)
+            if e.get("d"):
+                a["d"].append(e["d"])
+            bucket["skill"] += 1
+            continue
+        a = tools[e["n"]]
+        a["c"] += 1
+        if sid:
+            a["s"].add(sid)
+        if e.get("ok") is True:
+            a["ok"] += 1
+        elif e.get("ok") is False:
+            a["bad"] += 1
+        if e.get("d"):
+            a["d"].append(e["d"])
+        bucket["tool"] += 1
+
+    tsum = sum(a["c"] for a in tools.values()) or 1
+    tlist = []
+    for name, a in sorted(tools.items(), key=lambda x: (-x[1]["c"], x[0])):
+        avg, mx, p95 = _stats(a["d"])
+        tlist.append({
+            "n": name, "c": a["c"], "s": len(a["s"]), "ok": a["ok"], "bad": a["bad"],
+            "avg": avg, "max": mx, "p95": p95, "share": round(a["c"] / tsum * 100, 1),
+        })
+
+    slist = []
+    for name, a in sorted(skills.items(), key=lambda x: (-x[1]["c"], x[0])):
+        avg, _mx, _p95 = _stats(a["d"])
+        slist.append({"n": name, "c": a["c"], "s": len(a["s"]), "last": a["last"], "avg": avg})
+
+    cavg, cmax, cp95 = _stats(cmd["d"])
+    tool_d = [d for a in tools.values() for d in a["d"]]
+    avg, mx, p95 = _stats(tool_d)
+    med = round(statistics.median(tool_d), 2) if tool_d else 0
+    ok = sum(a["ok"] for a in tools.values())
+    bad = sum(a["bad"] for a in tools.values())
+
+    recent.sort(key=lambda e: -e["t"])
+    recent_rows = [{
+        "ts": e["t"], "cmd": e.get("c") or "", "desc": e.get("x") or "",
+        "d": e.get("d"), "ok": e.get("ok"), "sid": e.get("s") or "",
+        "sh": "bash" if e["n"] == "Bash" else "shell",
+    } for e in recent[:15]]
+
+    days = []
+    for i in range(ndays):
+        key = day_key(start + i * DAY_MS)
+        v = daily.get(key) or {"tool": 0, "skill": 0, "cmd": 0}
+        days.append({"d": key, "tool": v["tool"], "skill": v["skill"], "cmd": v["cmd"]})
+
+    return {
+        "kpi": {
+            "toolCalls": sum(a["c"] for a in tools.values()),
+            "toolNames": len(tools),
+            "okRate": round(ok / (ok + bad) * 100, 1) if (ok + bad) else 0,
+            "cmdCalls": cmd["total"],
+            "cmdBash": cmd["bash"],
+            "cmdShell": cmd["shell"],
+            "cmdFail": cmd["fail"],
+            "skillCalls": sum(a["c"] for a in skills.values()),
+            "skillNames": len(skills),
+            "sessions": len(sessions),
+            "avgDur": avg, "medianDur": med, "p95Dur": p95, "maxDur": mx,
+            "cmdAvgDur": cavg, "cmdMaxDur": cmax, "cmdP95Dur": cp95,
+        },
+        "tools": tlist,
+        "skills": slist,
+        "cmd": {
+            "total": cmd["total"], "bash": cmd["bash"], "shell": cmd["shell"],
+            "fail": cmd["fail"], "avg": cavg, "p95": cp95,
+            "families": [{"n": k, "c": v} for k, v in fams.most_common(12)],
+            "recent": recent_rows,
+        },
+        "daily": days,
+    }
+
+
+def build_adv(events):
+    """进阶看板数据：只保留技能、工具、命令三类，按 7 天 / 30 天 / 全部预聚。"""
+    events = [e for e in events if e.get("t")]
+    events.sort(key=lambda e: e["t"])
+    if not events:
+        empty = _window([], 0, 0)
+        return {"windows": {"7": empty, "30": empty, "all": empty}, "total": 0}
+
+    newest = events[-1]["t"]
+    end_day = day_start(newest)
+    first_day = day_start(events[0]["t"])
+    windows = {}
+    for label, days in (("7", 7), ("30", 30), ("all", None)):
+        if days:
+            start = end_day - (days - 1) * DAY_MS
+            ndays = days
+        else:
+            start = first_day
+            ndays = int((end_day - start) // DAY_MS) + 1
+        windows[label] = _window([e for e in events if e["t"] >= start], start, ndays)
+    return {"windows": windows, "total": len(events), "last": newest}
+
+
 def build(force=False):
     """汇总一次，返回可直接喂给前端的字典。"""
-    req_map, n_files, changed = scan_requests(force=force)
+    req_map, tool_events, n_files, changed = scan_requests(force=force)
     credits = load_credits()
     titles = load_session_titles()
+    adv = build_adv(tool_events)
 
     rows = []
     missing = 0
@@ -274,7 +526,8 @@ def build(force=False):
                 "fam": family_of(s["model"]), "first": s["ts"], "last": s["ts"],
                 "p": 0, "c": 0, "ch": 0, "rs": 0, "steps": 0,
                 "raw_credit": 0.0, "cost": 0.0, "priced": False,
-                "peak_all": True, "peak_any": False, "step_dur": None,
+                "peak_all": True, "peak_any": False, "peak_steps": 0,
+                "cost_peak": 0.0, "cost_off": 0.0, "step_dur": None,
             }
         t["steps"] += 1
         t["p"] += s["p"]
@@ -287,18 +540,27 @@ def build(force=False):
             t["raw_credit"] += float(s["credit"])
         if s.get("dur"):
             t["step_dur"] = (t["step_dur"] or 0) + s["dur"]
+        # 峰谷是时段属性，与模型无关：非 DeepSeek 模型没有价目、不计金额，
+        # 但同样要标出这一轮有没有踩在高峰里，否则表格里会出现「10:13 却没有峰标」。
+        pk = is_peak(s["ts"])
+        t["peak_all"] = t["peak_all"] and pk
+        t["peak_any"] = t["peak_any"] or pk
+        if pk:
+            t["peak_steps"] += 1
         fam = family_of(s["model"])
         if fam:
-            pk = is_peak(s["ts"])
-            t["peak_all"] = t["peak_all"] and pk
-            t["peak_any"] = t["peak_any"] or pk
             price = PRICES[fam]["peak" if pk else "off"]
             miss = max(0, s["p"] - s["ch"])
-            t["cost"] += (
+            step_cost = (
                 s["ch"] / 1e6 * price["hit"]
                 + miss / 1e6 * price["miss"]
                 + s["c"] / 1e6 * price["out"]
             )
+            t["cost"] += step_cost
+            if pk:
+                t["cost_peak"] += step_cost
+            else:
+                t["cost_off"] += step_cost
             t["priced"] = True
             t["fam"] = fam
 
@@ -316,6 +578,7 @@ def build(force=False):
             "title": titles.get(sid, ("", ""))[0],
             "cwd": titles.get(sid, ("", ""))[1],
             "ts": t["last"],
+            "ts0": t["first"],
             "m": t["m"],
             "fam": t["fam"],
             "steps": t["steps"],
@@ -328,6 +591,9 @@ def build(force=False):
             "cost": round(t["cost"], 6) if t["priced"] else None,
             "peak": t["peak_all"] if t["peak_any"] else False,
             "peakMixed": t["peak_any"] and not t["peak_all"],
+            "peakSteps": t["peak_steps"],
+            "costPeak": round(t["cost_peak"], 6) if t["priced"] else None,
+            "costOff": round(t["cost_off"], 6) if t["priced"] else None,
             "live": (int(time.time() * 1000) - t["last"]) < 10 * 60 * 1000,
             "dur": dur,
         })
@@ -403,6 +669,10 @@ def build(force=False):
     for r in rows:
         if r["sid"] and r["sid"] not in sessions_meta:
             sessions_meta[r["sid"]] = {"t": r["title"], "cwd": r["cwd"]}
+    # 有些会话只留下工具调用、没有可计量的请求，补上标题供进阶看板定位
+    for sid, meta in titles.items():
+        if sid and sid not in sessions_meta:
+            sessions_meta[sid] = {"t": meta[0], "cwd": meta[1]}
     data = {
         "generated": dt.datetime.now(BJ).strftime("%Y-%m-%d %H:%M:%S"),
         "files": n_files,
@@ -427,13 +697,17 @@ def build(force=False):
         "models": models,
         "days": days,
         "rows": [{
-            "rid": r["rid"], "sid": r["sid"], "ts": r["ts"], "m": r["m"], "fam": r["fam"],
+            "rid": r["rid"], "sid": r["sid"], "ts": r["ts"], "ts0": r["ts0"],
+            "m": r["m"], "fam": r["fam"],
             "steps": r["steps"], "rs": r["rs"], "p": r["p"], "c": r["c"], "ch": r["ch"],
             "cr": r["cr"], "hasCr": r["hasCr"], "cost": r["cost"], "dur": r["dur"],
-            "peak": r["peak"], "peakMixed": r["peakMixed"], "live": r["live"],
+            "costPeak": r["costPeak"], "costOff": r["costOff"],
+            "peak": r["peak"], "peakMixed": r["peakMixed"], "peakSteps": r["peakSteps"],
+            "live": r["live"],
         } for r in rows],
         "sessions": sessions_meta,
         "prices": PRICES,
+        "adv": adv,
     }
     return data
 
@@ -441,7 +715,10 @@ def build(force=False):
 def write_snapshot(data):
     STATE_PATH.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
     tpl = TEMPLATE_PATH.read_text(encoding="utf-8")
-    html = tpl.replace("__DATA__", json.dumps(data, ensure_ascii=False, separators=(",", ":")))
+    payload = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
+    # 命令原文里可能出现 </script> 之类序列，转义斜杠，避免把内联脚本提前闭合
+    payload = payload.replace("</", "<\\/")
+    html = tpl.replace("__DATA__", payload)
     SNAPSHOT_PATH.write_text(html, encoding="utf-8")
 
 
