@@ -27,9 +27,21 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 TPL_PATH = HERE / "template.html"
 DATA_PATH = HERE / "dashboard-data.json"
+VERSION_PATH = HERE / "VERSION"
 DIST = HERE / "dist"
 BUILD = HERE / "build"
-ZIP_PATH = BUILD / "minitool-usage-dashboard.zip"
+
+
+def read_version():
+    """与 dashboard.py 同一个来源：根目录 VERSION。产物名和页面页脚都用它。"""
+    try:
+        return VERSION_PATH.read_text(encoding="utf-8").strip().lstrip("vV") or "0.0.0"
+    except OSError:
+        return "0.0.0"
+
+
+APP_VERSION = read_version()
+ZIP_PATH = BUILD / ("minitool-usage-dashboard-%s.zip" % APP_VERSION)
 AUDIT = HERE / ".skill" / "minitool-zip-builder" / "scripts" / "audit_artifact.py"
 
 VIEWPORT = (
@@ -217,6 +229,7 @@ def build(keep_titles=False):
         + '<script src="./assets/app.js"></script>\n'
         + "</body>\n</html>\n"
     )
+    page = page.replace("__VERSION__", APP_VERSION)
     (DIST / "index.html").write_text(page, encoding="utf-8")
     return stats
 
@@ -246,6 +259,10 @@ def check():
         errors.append("index.html 缺少 lang=zh-CN")
     if "viewport-fit=cover" not in index:
         errors.append("viewport 缺少 viewport-fit=cover")
+    if "__VERSION__" in index:
+        errors.append("index.html 里 __VERSION__ 没被替换（版本号来源断了）")
+    elif APP_VERSION not in index:
+        errors.append("index.html 页脚缺少版本号 %s" % APP_VERSION)
     if "<base" in index.lower():
         errors.append("禁止使用 <base>")
     if "<iframe" in index.lower() or "<object" in index.lower():
@@ -378,7 +395,7 @@ def main():
     with zipfile.ZipFile(zip_path) as z:
         for info in z.infolist():
             print("  %-22s %7d B  压缩后 %d B" % (info.filename, info.file_size, info.compress_size))
-    print("PASS  产物：%s（%.1f KiB）" % (zip_path, zip_path.stat().st_size / 1024))
+    print("PASS  v%s 产物：%s（%.1f KiB）" % (APP_VERSION, zip_path, zip_path.stat().st_size / 1024))
     return 0
 
 

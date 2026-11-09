@@ -39,6 +39,19 @@ If you would rather not type commands:
 
 「立即同步」 (Sync now) re-scans and redraws. With 「自动刷新」 (Auto refresh) on, it syncs silently every 60 seconds.
 
+## Version
+
+The version lives in exactly one place, the `VERSION` file at the repo root; the server, the page footer and the offline package all read from it.
+
+```bash
+curl -s http://127.0.0.1:8765/api/health
+# {"ok": true, "product": "buddy-context", "version": "0.1.0"}
+```
+
+After a release, hit this endpoint first: the `version` it returns must match the git tag and `docs/versions.json`. The offline package filename carries the version too (`minitool-usage-dashboard-0.1.0.zip`), as does the footer.
+
+What changed in each version, and why, is recorded in `docs/versions.json`; `docs/version-board.html` is the printable view of it. Release and rollback steps: `docs/VERSIONING.md` (Chinese).
+
 ## Two definitions that matter
 
 **1. The unit is a *turn*, not an API call**

@@ -50,6 +50,18 @@ CACHE_PATH = HERE / ".scan-cache.json"
 TEMPLATE_PATH = HERE / "template.html"
 SNAPSHOT_PATH = HERE / "index.html"
 STATE_PATH = HERE / "dashboard-data.json"
+VERSION_PATH = HERE / "VERSION"
+
+
+def read_version():
+    """版本号只有 VERSION 一个来源：服务、快照页脚、健康检查、打包产物都从这里读。"""
+    try:
+        return VERSION_PATH.read_text(encoding="utf-8").strip().lstrip("vV") or "0.0.0"
+    except OSError:
+        return "0.0.0"
+
+
+APP_VERSION = read_version()
 
 # ---------- 价格表 ----------
 # 元 / 百万 tokens
@@ -718,12 +730,12 @@ def write_snapshot(data):
     payload = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
     # 命令原文里可能出现 </script> 之类序列，转义斜杠，避免把内联脚本提前闭合
     payload = payload.replace("</", "<\\/")
-    html = tpl.replace("__DATA__", payload)
+    html = tpl.replace("__DATA__", payload).replace("__VERSION__", APP_VERSION)
     SNAPSHOT_PATH.write_text(html, encoding="utf-8")
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "LocalUsageDashboard/1.0"
+    server_version = "BuddyDashboard/" + APP_VERSION
 
     def _send(self, code, body, ctype="application/json; charset=utf-8"):
         raw = body.encode("utf-8") if isinstance(body, str) else body
@@ -735,6 +747,14 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(raw)
 
     def do_GET(self):
+        if self.path.startswith("/api/health"):
+            # 发版后先打这里：返回的 version 要和 git tag、docs/versions.json 里的一致
+            self._send(200, json.dumps({
+                "ok": True,
+                "product": "buddy-context",
+                "version": APP_VERSION,
+            }, ensure_ascii=False))
+            return
         if self.path.startswith("/api/data"):
             with LOCK:
                 data = json.loads(STATE_PATH.read_text(encoding="utf-8")) if STATE_PATH.exists() else build()
@@ -803,7 +823,7 @@ def main():
 
     url = "http://127.0.0.1:%d" % args.port
     srv = ThreadingHTTPServer(("127.0.0.1", args.port), Handler)
-    print("看板已启动: %s   (Ctrl+C 停止)" % url)
+    print("看板已启动: %s   (v%s，Ctrl+C 停止)" % (url, APP_VERSION))
     if not args.no_browser:
         threading.Timer(0.6, lambda: webbrowser.open(url)).start()
     try:

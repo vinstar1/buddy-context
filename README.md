@@ -39,6 +39,19 @@ python dashboard.py --data-dir D:/wb-data   # 指定数据目录
 
 页面上的「立即同步」会重新扫描并重绘；「自动刷新」开启后每 60 秒静默同步一次。
 
+## 版本
+
+版本号只写在根目录 `VERSION` 一个文件里，服务、页面页脚和离线包都从它读。
+
+```bash
+curl -s http://127.0.0.1:8765/api/health
+# {"ok": true, "product": "buddy-context", "version": "0.1.0"}
+```
+
+发版后先打这个接口，返回的 `version` 和 git tag、`docs/versions.json` 里的一致才算发布完成。离线包的文件名也带版本号（`minitool-usage-dashboard-0.1.0.zip`），页脚同样显示版本。
+
+每一版为什么改、改了什么，写在 [`docs/versions.json`](docs/versions.json)，可直接打印的看板是 `docs/version-board.html`；发版流程与回滚办法见 [`docs/VERSIONING.md`](docs/VERSIONING.md)。
+
 ## 两个关键口径
 
 **1. 统计单位是「一轮对话」，不是「一次 API 调用」**

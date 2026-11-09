@@ -15,6 +15,9 @@ __pycache__/
 .venv/
 venv/
 
+# 发版快照与发布记录（不入 git）
+_releases/
+
 # 编辑器 / 系统
 .vscode/
 .idea/

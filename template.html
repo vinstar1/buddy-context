@@ -354,7 +354,7 @@
   <b>统计单位</b>是「一轮对话」：同一个 <span class="num">conversationRequestId</span> 下通常包含多次 API 调用（<span class="num">stepSeq</span>），token 与金额按步累加，积分取该轮合计（与客户端「共消耗」一致）。<br>
   <b>数据来源</b>：本机 <span class="num">~/.workbuddy/projects/*/*.jsonl</span> 中每条 assistant 消息的 <span class="num">providerData.rawUsage</span>，按 <span class="num">conversationRequestId</span> 与 <span class="num">session_usage.credit_json</span> 对账；积分优先取库内快照，缺失时用日志逐轮求和补齐。<br>
   <b>金额</b>按 DeepSeek 官方价目折算（元），每一步按其发生时刻判定高峰/空闲；非 DeepSeek 模型没有官方价，金额留空。<b>峰谷标记对所有模型生效</b>：列表时间列显示「开始 → 结束」，标「峰」表示每次调用都在高峰时段，标「峰 62%」表示这一轮只有部分调用落在高峰。<b>积分</b>是平台计量单位，与人民币不是 1:1。<br>
-  <b>速度</b> = 输出 tokens ÷ 轮次时长，含工具调用与客户端开销，非模型纯净时延。<b>首字（TTFT）</b>：本地未记录，故留空。<b>快照</b> <span id="genTime">—</span>。
+  <b>速度</b> = 输出 tokens ÷ 轮次时长，含工具调用与客户端开销，非模型纯净时延。<b>首字（TTFT）</b>：本地未记录，故留空。<b>快照</b> <span id="genTime">—</span>，<b>版本</b> v<span class="num">__VERSION__</span>。
 </div>
 
 </div>
@@ -438,7 +438,7 @@
   <div class="foot">
     <b>数据来源</b>：本机 <span class="num">~/.workbuddy/projects/*/*.jsonl</span> 里的 <span class="num">function_call</span> 与 <span class="num">function_call_result</span> 记录，两者按 <span class="num">callId</span> 配对，差值即为这次调用的耗时。<br>
     <b>三类互不重叠</b>：<b>技能</b> = <span class="num">Skill</span> 调用；<b>命令</b> = <span class="num">Bash</span> 与终端命令；<b>工具</b> = 其余全部函数调用（含 MCP，<span class="num">DeferExecuteTool</span> 按真实工具名归并）。<br>
-    <b>完成率</b> = 状态为 completed 的结果数 ÷ 有结果的调用数，被中断或无结果的调用不计入分母。<b>命令族</b>取命令的首个可执行名，自动剥离开头的 <span class="num">cd … &&</span>、环境变量与 <span class="num">sudo</span>。<b>快照</b> <span id="advGenTime">—</span>。
+    <b>完成率</b> = 状态为 completed 的结果数 ÷ 有结果的调用数，被中断或无结果的调用不计入分母。<b>命令族</b>取命令的首个可执行名，自动剥离开头的 <span class="num">cd … &&</span>、环境变量与 <span class="num">sudo</span>。<b>快照</b> <span id="advGenTime">—</span>，<b>版本</b> v<span class="num">__VERSION__</span>。
   </div>
 </div>
 

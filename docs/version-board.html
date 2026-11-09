@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>版本记录</title>
+<style>
+:root{
+  --paper:#F6F7F4; --ink:#1F2A37; --ink2:#566170; --ink3:#8A93A0;
+  --mint:#277A66; --mint-soft:#DCEDE6; --yellow:#F4C43B; --yellow-soft:#FBEFC9;
+  --mark:#C2413A; --mist:#DDE3DE; --white:#fff;
+  --sans:"PingFang SC","HarmonyOS Sans SC","Microsoft YaHei","Noto Sans CJK SC",system-ui,sans-serif;
+  --kai:"LXGW WenKai Screen","Kaiti SC","STKaiti","KaiTi",serif;
+  --mono:"SF Mono",Consolas,"Cascadia Mono",monospace;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font:400 15px/1.7 var(--sans);font-variant-numeric:tabular-nums}
+h1,h2,h3,h4,p,ul,ol,dl,dd,figure{margin:0}
+ul,ol{padding:0;list-style:none}
+a{color:inherit}
+.wrap{max-width:1060px;margin:0 auto;padding:0 28px}
+
+/* ---------------- 头部 ---------------- */
+.top{background:var(--white);border-bottom:1px solid var(--mist);padding:34px 0 26px}
+.top .wrap{display:flex;align-items:flex-end;justify-content:space-between;gap:32px;flex-wrap:wrap}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:12px;letter-spacing:.16em;color:var(--mint);text-transform:uppercase;font-weight:600}
+.eyebrow::before{content:"";width:18px;height:2px;background:var(--mint)}
+h1{font-size:32px;line-height:1.25;letter-spacing:-.01em;margin-top:10px;font-weight:700}
+h1 .thin{font-weight:400;color:var(--ink2)}
+.sub{margin-top:8px;color:var(--ink2);font-size:14px}
+.stats{display:flex;gap:0;border:1px solid var(--mist);border-radius:10px;overflow:hidden;background:var(--paper)}
+.stats>div{padding:12px 20px;border-right:1px solid var(--mist);min-width:104px}
+.stats>div:last-child{border-right:0}
+.stats dt{font-size:11.5px;color:var(--ink3);letter-spacing:.06em}
+.stats dd{margin:4px 0 0;font-size:20px;font-weight:700;line-height:1.2}
+.stats dd small{font-size:12px;font-weight:400;color:var(--ink2);margin-left:2px}
+
+/* ---------------- 工具条 ---------------- */
+.toolbar{position:sticky;top:0;z-index:20;background:rgba(246,247,244,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--mist)}
+.toolbar .wrap{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:56px;padding-top:8px;padding-bottom:8px;flex-wrap:wrap}
+.filters{display:flex;gap:6px;flex-wrap:wrap}
+.filters button{border:1px solid transparent;background:none;color:var(--ink2);font-size:13px;padding:5px 12px;border-radius:999px;cursor:pointer;transition:.15s}
+.filters button:hover{background:var(--white);color:var(--ink)}
+.filters button[aria-pressed="true"]{background:var(--ink);color:var(--white);border-color:var(--ink)}
+.acts{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.gen{font-size:11.5px;color:var(--ink3)}
+.gen code{font-family:var(--mono)}
+#print{border:1px solid var(--mist);background:var(--white);color:var(--ink);font-size:13px;padding:6px 14px;border-radius:8px;cursor:pointer}
+#print:hover{border-color:var(--mint);color:var(--mint)}
+
+/* ---------------- 通用 ---------------- */
+section{margin:40px 0}
+.sec-head{display:flex;align-items:baseline;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.sec-head h2{font-size:18px;font-weight:700;letter-spacing:-.005em}
+.sec-head .note{font-size:12.5px;color:var(--ink3)}
+
+/* ---------------- 一页纸 ---------------- */
+.sheet{background:var(--white);border:1px solid var(--mist);border-radius:12px;overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:680px}
+thead th{text-align:left;font-weight:600;font-size:12px;letter-spacing:.04em;color:var(--ink3);background:var(--paper);padding:10px 14px;border-bottom:1px solid var(--mist);white-space:nowrap}
+tbody td{padding:13px 14px;border-bottom:1px solid var(--mist);vertical-align:top;color:var(--ink2)}
+tbody tr:last-child td{border-bottom:0}
+tbody tr:hover td{background:#FBFCFA}
+td.v{white-space:nowrap;color:var(--ink);font-weight:700;font-size:14px}
+td.v em{display:block;font-style:normal;font-weight:400;font-size:11.5px;color:var(--ink3);margin-top:2px}
+td.biz{color:var(--ink);min-width:200px}
+td.sum{min-width:220px}
+
+/* ---------------- 状态 ---------------- */
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;padding:2px 9px;border-radius:999px;white-space:nowrap;line-height:1.7}
+.chip::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor}
+.chip.released{background:var(--mint-soft);color:var(--mint)}
+.chip.demo{background:var(--yellow-soft);color:#8A6A11}
+.chip.iterating{background:#EEF1F5;color:var(--ink2)}
+.chip.other{background:#EEF1F5;color:var(--ink2)}
+
+/* ---------------- 时间轴 ---------------- */
+.timeline{position:relative}
+.timeline::before{content:"";position:absolute;left:7px;top:14px;bottom:14px;width:2px;background:linear-gradient(var(--mist),var(--mist) 70%,transparent)}
+.ver{position:relative;padding-left:38px;margin-bottom:26px}
+.ver::before{content:"";position:absolute;left:0;top:22px;width:16px;height:16px;border-radius:50%;background:var(--white);border:3px solid var(--mint);box-shadow:0 0 0 4px var(--paper)}
+.ver[data-status="demo"]::before{border-color:var(--yellow)}
+.ver[data-status="iterating"]::before{border-color:var(--mist);border-style:dashed}
+.ver[hidden]{display:none}
+
+.card{background:var(--white);border:1px solid var(--mist);border-radius:12px;overflow:hidden}
+.card-head{display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid var(--mist);flex-wrap:wrap}
+.vtag{font-family:var(--mono);font-size:13px;font-weight:700;background:var(--ink);color:var(--white);padding:3px 9px;border-radius:6px;letter-spacing:.02em}
+.card-head h3{font-size:16.5px;font-weight:700;flex:1;min-width:180px}
+.card-head time{font-size:12.5px;color:var(--ink3);font-family:var(--mono)}
+
+.card-body{display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);gap:0}
+.col{padding:18px 20px}
+.col+.col{border-left:1px solid var(--mist)}
+h4{font-size:11.5px;letter-spacing:.1em;color:var(--ink3);font-weight:600;margin-bottom:8px}
+.col p{color:var(--ink);font-size:14px}
+.quote{font-family:var(--kai);font-size:15px;line-height:1.85;letter-spacing:.01em;border-left:3px solid var(--yellow);padding-left:12px;color:var(--ink)}
+.fb{margin-top:14px}
+.fb li{font-size:13px;color:var(--ink2);padding-left:14px;position:relative;margin-top:4px}
+.fb li::before{content:"·";position:absolute;left:3px;color:var(--mint);font-weight:700}
+
+.grp{margin-bottom:14px}
+.grp:last-child{margin-bottom:0}
+.grp dt{font-size:12px;font-weight:600;color:var(--mint);margin-bottom:5px}
+.grp dd ul li{font-size:13.5px;color:var(--ink2);padding-left:13px;position:relative;margin-top:5px;line-height:1.65}
+.grp dd ul li::before{content:"";position:absolute;left:0;top:.72em;width:4px;height:4px;border-radius:50%;background:var(--mist)}
+
+.pending{border:1px dashed var(--mist);border-radius:8px;padding:14px 16px;color:var(--ink2);font-size:13.5px;background:#FCFCFA}
+.pending b{color:var(--ink);font-weight:600}
+
+.card-foot{display:flex;align-items:center;gap:16px;padding:10px 20px;border-top:1px solid var(--mist);background:#FCFCFA;font-size:12px;color:var(--ink3);flex-wrap:wrap}
+.card-foot code{font-family:var(--mono);font-size:12px;color:var(--ink2)}
+details.roll{margin-left:auto}
+details.roll[open]{flex-basis:100%;margin-left:0}
+details.roll summary{cursor:pointer;color:var(--ink3);list-style:none;font-size:12px;user-select:none}
+details.roll summary::-webkit-details-marker{display:none}
+details.roll summary::before{content:"↺ ";color:var(--mint)}
+details.roll summary:hover{color:var(--mint)}
+.roll-body{margin-top:8px;background:var(--ink);color:#E8EDEA;border-radius:8px;padding:12px 14px;font-family:var(--mono);font-size:11.5px;line-height:1.9;white-space:pre;text-align:left;overflow:auto}
+
+footer{padding:30px 0 60px;color:var(--ink3);font-size:12px;border-top:1px solid var(--mist);margin-top:44px}
+footer code{font-family:var(--mono);color:var(--ink2)}
+.empty{padding:40px 20px;text-align:center;color:var(--ink3);font-size:13.5px}
+
+@media (max-width:820px){
+  .card-body{grid-template-columns:1fr}
+  .col+.col{border-left:0;border-top:1px solid var(--mist)}
+  .stats{width:100%}
+  h1{font-size:26px}
+  .wrap{padding:0 18px}
+}
+
+@media print{
+  @page{size:A4;margin:14mm 12mm}
+  body{background:#fff;font-size:11.5px}
+  .toolbar,footer,#print,.roll{display:none!important}
+  table{min-width:0}
+  .sheet{overflow:visible}
+  .top{padding:0 0 14px;border-bottom:1px solid #ccc}
+  .wrap{max-width:none;padding:0}
+  .stats{border-color:#ccc}
+  section{margin:18px 0}
+  .card,.sheet{break-inside:avoid;box-shadow:none;border-color:#ccc}
+  .ver{break-inside:avoid}
+  .timeline::before,.ver::before{display:none}
+  .ver{padding-left:0}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <div>
+      <span class="eyebrow">版本记录</span>
+      <h1><span id="prod">—</span> <span class="thin">· 迭代台账</span></h1>
+      <p class="sub" id="sub">每一版为什么改、改了什么、什么时候上线 —— 一页看完</p>
+    </div>
+    <dl class="stats">
+      <div><dt>最新版本</dt><dd id="s-cur">—</dd></div>
+      <div><dt>已记录</dt><dd id="s-cnt">—</dd></div>
+      <div><dt>最近更新</dt><dd id="s-date">—</dd></div>
+    </dl>
+  </div>
+</header>
+
+<div class="toolbar">
+  <div class="wrap">
+    <nav class="filters" id="filters"></nav>
+    <div class="acts">
+      <span class="gen">数据源 <code id="src">docs/versions.json</code> · 生成于 2026-11-09 11:51</span>
+      <button id="print" type="button">打印 / 导出 PDF</button>
+    </div>
+  </div>
+</div>
+
+<main class="wrap">
+
+  <section id="sheet-sec">
+    <div class="sec-head">
+      <h2>一页纸</h2>
+      <span class="note">汇报用：版本号 / 更新时间 / 业务需求 / 更新点</span>
+    </div>
+    <div class="sheet"><table>
+      <thead><tr><th>版本</th><th>更新时间</th><th>业务需求</th><th>主要更新点</th><th>状态</th></tr></thead>
+      <tbody id="sheet"></tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <h2>逐版明细</h2>
+      <span class="note">左边是业务诉求，右边是落地的改动</span>
+    </div>
+    <div class="timeline" id="list"></div>
+  </section>
+
+</main>
+
+<footer class="wrap">
+  <div>版本号只有一个来源：<code id="vf">VERSION</code>；这里展示的内容来自 <code id="js">docs/versions.json</code>。</div>
+  <div id="repo"></div>
+  <div>改完 json 跑一次 <code>python <span id="sc">docs/version_ledger.py</span> build</code>，本页会重新生成，不要手改。</div>
+</footer>
+
+<script type="application/json" id="data">{
+  "product": "Buddy 用量看板",
+  "subtitle": "每一版为什么改、改了什么、什么时候上线",
+  "platform": "github",
+  "repo_url": "https://github.com/vinstar1/buddy-context",
+  "version_file": "VERSION",
+  "artifact": "minitool-usage-dashboard-{version}.zip",
+  "health_url": "http://127.0.0.1:8765/api/health",
+  "statuses": {
+    "released": "已交付",
+    "demo": "已演示",
+    "iterating": "开发中"
+  },
+  "updated": "2026-11-09",
+  "versions": [
+    {
+      "version": "0.1.0",
+      "status": "released",
+      "date": "2026-11-09",
+      "tag": "v0.1.0",
+      "theme": "首次建账：双看板 + 峰谷计价 + 离线小工具包",
+      "business": "以前算不清自己每天在 AI 上花了多少：客户端只显示积分，看不到 token、缓存命中，也折不成钱；更说不清时间都花在哪些技能和命令上。这一版给出一份完全在本机生成的账本，打开就是四张指标卡和按日趋势，点开任意一轮能看到每一步用了哪个模型、命中多少缓存、折多少钱；另开一页专门统计技能、工具、命令各调用多少次、耗时多少，用来判断哪些技能值得留着、哪些命令总在失败。数据不出本机，也不用装任何依赖。",
+      "feedback": [],
+      "changes": {
+        "用户端": [
+          "新增「用量看板」：积分 / 金额 / token / 缓存命中四张指标卡，加按日趋势图与模型成本表",
+          "请求日志支持按模型、时段、是否高峰筛选，点开任意一轮可看每一步的 token、缓存与折算金额",
+          "金额按 DeepSeek 官方价目折算，并按每次调用实际发生的时刻区分高峰价与空闲价",
+          "峰谷标记覆盖全部模型：时间列显示「开始 → 结束」，标「峰」表示全程高峰，标「峰 62%」表示部分落在高峰",
+          "页脚显示当前版本号，页面上所有时间按北京时间展示"
+        ],
+        "进阶看板": [
+          "新增「进阶看板」，技能 / 命令 / 工具三类互不重叠，合计等于全部函数调用",
+          "技能榜显示调用次数、覆盖会话数、最近一次使用与加载耗时",
+          "命令榜显示命令族分布、失败次数和最近执行明细，自动剥离开头的 cd、环境变量与 sudo",
+          "工具榜显示调用次数、会话数、平均耗时、P95 与完成率，DeferExecuteTool 按真实工具名拆壳归类"
+        ],
+        "后端": [
+          "只用 Python 标准库扫描 ~/.workbuddy 下的 jsonl 与 workbuddy.db，增量缓存，不联网、不上传",
+          "积分以 workbuddy.db 的 credit_json 为准，缺失时按日志逐轮求和补齐，保证与客户端「共消耗」一致",
+          "新增 GET /api/health，返回当前版本号，发版后一条命令就能核对跑的是哪一版",
+          "版本号收敛到根目录 VERSION 单一来源，服务响应头、页面页脚、离线包都从它读"
+        ],
+        "部署": [
+          "离线小工具包产物改为带版本号命名：build/minitool-usage-dashboard-0.1.0.zip",
+          "打包脚本内置版本校验：页脚没注入版本号即构建失败，避免发出无法分辨的包",
+          "打包时隐去本机绝对路径、脱敏会话标题、清除「进行中」标记，产物可直接分发"
+        ]
+      },
+      "note": "版本管理自本版建立。此前 8 个提交的迭代合并计入 0.1.0，未向历史提交追溯打标。"
+    }
+  ]
+}</script>
+<script>
+(function(){
+  var RAW = JSON.parse(document.getElementById('data').textContent);
+  var STATUS = RAW.statuses || {released:'已交付',demo:'已演示',iterating:'开发中'};
+  var V = (RAW.versions || []).slice();
+
+  function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function cmp(a,b){var A=a.split('.').map(Number),B=b.split('.').map(Number);for(var i=0;i<3;i++){if((A[i]||0)!==(B[i]||0))return (B[i]||0)-(A[i]||0);}return 0;}
+  function flat(changes){var out=[];Object.keys(changes||{}).forEach(function(k){(changes[k]||[]).forEach(function(x){out.push(x);});});return out;}
+  function chip(st){return '<span class="chip '+esc(STATUS[st]?st:'other')+'">'+esc(STATUS[st]||st)+'</span>';}
+  V.sort(function(a,b){return cmp(a.version,b.version);});
+
+  // ---- 静态文案 ----
+  document.title = '版本记录 · ' + (RAW.product || '');
+  document.getElementById('prod').textContent = RAW.product || '版本记录';
+  if (RAW.subtitle) document.getElementById('sub').textContent = RAW.subtitle;
+  var vf = RAW.version_file || 'VERSION';
+  document.getElementById('vf').textContent = vf;
+  var jsonPath = (RAW.docs_dir ? RAW.docs_dir.replace(/\/$/,'') + '/' : 'docs/') + 'versions.json';
+  document.getElementById('src').textContent = jsonPath;
+  document.getElementById('js').textContent = jsonPath;
+  document.getElementById('sc').textContent = (RAW.docs_dir ? RAW.docs_dir.replace(/\/$/,'') + '/' : 'docs/') + 'version_ledger.py';
+  if (RAW.repo_url) {
+    document.getElementById('repo').innerHTML = '仓库：<a href="' + esc(RAW.repo_url) + '" target="_blank" rel="noopener">' + esc(RAW.repo_url.replace(/^https?:\/\//,'')) + '</a>';
+  }
+
+  // ---- 统计 ----
+  var latest = V.filter(function(v){return v.status !== 'iterating';})[0] || V[0];
+  document.getElementById('s-cur').textContent = latest ? 'v' + latest.version : '—';
+  document.getElementById('s-cnt').innerHTML = V.length + ' <small>版</small>';
+  document.getElementById('s-date').textContent = (latest && latest.date) ? latest.date.slice(5) : '—';
+
+  // ---- 筛选 ----
+  var used = [];
+  V.forEach(function(v){ if (used.indexOf(v.status) < 0) used.push(v.status); });
+  var btns = [];
+  function addFilter(label, key){
+    var b = document.createElement('button');
+    b.type = 'button'; b.textContent = label;
+    b.setAttribute('aria-pressed', key === 'all' ? 'true' : 'false');
+    b.onclick = function(){
+      btns.forEach(function(x){ x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+      document.querySelectorAll('.ver').forEach(function(el){
+        el.hidden = (key !== 'all' && el.dataset.status !== key);
+      });
+    };
+    btns.push(b);
+    document.getElementById('filters').appendChild(b);
+  }
+  addFilter('全部', 'all');
+  Object.keys(STATUS).forEach(function(k){ if (used.indexOf(k) >= 0) addFilter(STATUS[k], k); });
+  used.forEach(function(k){ if (!STATUS[k]) addFilter(k, k); });
+
+  // ---- 一页纸 ----
+  document.getElementById('sheet').innerHTML = V.map(function(v){
+    var pts = flat(v.changes);
+    var sum = pts.length
+      ? pts.slice(0,3).map(esc).join('；') + (pts.length > 3 ? '；等 ' + pts.length + ' 项' : '')
+      : '<span style="color:var(--ink3)">待汇总</span>';
+    return '<tr>' +
+      '<td class="v">v' + esc(v.version) + '<em>' + esc(v.theme || '') + '</em></td>' +
+      '<td style="white-space:nowrap">' + (v.date ? esc(v.date) : '—') + '</td>' +
+      '<td class="biz">' + esc(v.business || '') + '</td>' +
+      '<td class="sum">' + sum + '</td>' +
+      '<td>' + chip(v.status) + '</td>' +
+    '</tr>';
+  }).join('');
+
+  // ---- 明细 ----
+  document.getElementById('list').innerHTML = V.map(function(v){
+    var groups = Object.keys(v.changes || {});
+    var tech = groups.filter(function(g){ return (v.changes[g] || []).length; }).map(function(g){
+      return '<div class="grp"><dt>' + esc(g) + '</dt><dd><ul>' +
+        (v.changes[g] || []).map(function(it){ return '<li>' + esc(it) + '</li>'; }).join('') +
+      '</ul></dd></div>';
+    }).join('');
+
+    var pending = v.pending
+      ? '<div class="pending"><b>待填写。</b>' + esc(v.next || '把这一版的业务反馈和改动写进台账。') + '</div>'
+      : '';
+
+    var fb = (v.feedback && v.feedback.length)
+      ? '<div class="fb"><h4>业务反馈</h4><ul class="fb">' + v.feedback.map(function(x){ return '<li>' + esc(x) + '</li>'; }).join('') + '</ul></div>'
+      : '';
+
+    var rollLines = [];
+    if (v.tag) rollLines.push('git checkout ' + v.tag + '        # 只看旧版代码，不动线上');
+    if (RAW.artifact) rollLines.push('# 旧版产物：' + RAW.artifact.replace('{version}', v.version));
+    if (RAW.health_url) rollLines.push('curl -s ' + RAW.health_url + '   # 确认 version=' + v.version);
+    var roll = rollLines.length
+      ? '<details class="roll"><summary>回滚到这一版</summary><div class="roll-body">' + esc(rollLines.join('\n')) + '</div></details>'
+      : '';
+
+    return '<article class="ver" data-status="' + esc(v.status) + '">' +
+      '<div class="card">' +
+        '<div class="card-head">' +
+          '<span class="vtag">v' + esc(v.version) + '</span>' +
+          '<h3>' + esc(v.theme || '') + '</h3>' +
+          chip(v.status) +
+          '<time>' + (v.date ? esc(v.date) : '未发布') + '</time>' +
+        '</div>' +
+        '<div class="card-body">' +
+          '<div class="col">' +
+            '<h4>业务需求说明</h4>' +
+            '<p class="quote">' + esc(v.business || '') + '</p>' +
+            fb +
+          '</div>' +
+          '<div class="col">' +
+            '<h4>更新点</h4>' +
+            (tech || '') +
+            (pending || '') +
+          '</div>' +
+        '</div>' +
+        '<div class="card-foot">' +
+          '<span>代码标签 <code>' + (v.tag ? esc(v.tag) : '无') + '</code></span>' +
+          (v.note ? '<span style="color:var(--mark)">' + esc(v.note) + '</span>' : '') +
+          '<span>' + esc(groups.length ? groups.join(' · ') : '—') + '</span>' +
+          roll +
+        '</div>' +
+      '</div>' +
+    '</article>';
+  }).join('');
+
+  document.getElementById('print').onclick = function(){ window.print(); };
+})();
+</script>
+</body>
+</html>
