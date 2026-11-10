@@ -41,6 +41,8 @@ import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
+import sessions  # 会话事件级解析，供「会话明细」视图使用
+
 HERE = Path(__file__).resolve().parent
 HOME = Path.home()
 # 数据目录：默认 ~/.workbuddy，可用 --data-dir 或环境变量 WORKBUDDY_HOME 覆盖
@@ -734,6 +736,18 @@ def write_snapshot(data):
     SNAPSHOT_PATH.write_text(html, encoding="utf-8")
 
 
+class Server(ThreadingHTTPServer):
+    """关掉端口复用。
+
+    ThreadingHTTPServer 默认 allow_reuse_address=1，Windows 下会让多个进程同时
+    绑定同一端口，请求随机落到其中任意一个。表现出来就是「明明改了代码，打开
+    却还是旧页面」，而且 netstat 里挂着一串进程。关掉之后第二个实例直接绑定失败。
+    """
+
+    allow_reuse_address = False
+    daemon_threads = True
+
+
 class Handler(BaseHTTPRequestHandler):
     server_version = "BuddyDashboard/" + APP_VERSION
 
@@ -754,6 +768,30 @@ class Handler(BaseHTTPRequestHandler):
                 "product": "buddy-context",
                 "version": APP_VERSION,
             }, ensure_ascii=False))
+            return
+        if self.path.startswith("/api/sessions"):
+            # 会话明细的列表索引。首次调用才构建（约几秒），之后走缓存，
+            # 不影响主看板的构建速度。
+            try:
+                rows = sessions.SessionIndex.get(force="force=1" in self.path)
+            except Exception as exc:
+                self._send(500, json.dumps({"error": str(exc)}, ensure_ascii=False))
+                return
+            self._send(200, json.dumps(rows, ensure_ascii=False))
+            return
+        if self.path.startswith("/api/session/"):
+            rest = self.path.split("/api/session/", 1)[1]
+            sid = rest.split("?", 1)[0]
+            gran = "step" if "granularity=step" in rest else "turn"
+            try:
+                payload = sessions.session_payload(sid, gran)
+            except Exception as exc:
+                self._send(500, json.dumps({"error": str(exc)}, ensure_ascii=False))
+                return
+            if payload is None:
+                self._send(404, '{"error":"not found"}')
+                return
+            self._send(200, json.dumps(payload, ensure_ascii=False))
             return
         if self.path.startswith("/api/data"):
             with LOCK:
@@ -822,7 +860,13 @@ def main():
         return
 
     url = "http://127.0.0.1:%d" % args.port
-    srv = ThreadingHTTPServer(("127.0.0.1", args.port), Handler)
+    try:
+        srv = Server(("127.0.0.1", args.port), Handler)
+    except OSError:
+        print("端口 %d 已被占用，应该已经有一个看板在运行。" % args.port)
+        print("直接打开 %s 就能用；想换端口用 --port %d。" % (url, args.port + 1))
+        print("如果是改完代码要重启：先关掉原来的窗口，再双击 start.bat。")
+        return 1
     print("看板已启动: %s   (v%s，Ctrl+C 停止)" % (url, APP_VERSION))
     if not args.no_browser:
         threading.Timer(0.6, lambda: webbrowser.open(url)).start()

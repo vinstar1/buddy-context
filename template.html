@@ -189,6 +189,85 @@
     .viewseg { margin-left: 8px; }
     .seg button { padding: 0 9px; }
   }
+  /* ---------- 会话明细 ---------- */
+  .sess-wrap { display: flex; border: 1px solid #ececec; border-radius: 10px; overflow: hidden; height: calc(100vh - 178px); min-height: 520px; margin: 0 20px 18px; background: #fff; }
+  .sess-side { width: 264px; flex: none; border-right: 1px solid #ececec; display: flex; flex-direction: column; background: #fcfcfc; }
+  .sess-side-hd { padding: 10px 10px 8px; border-bottom: 1px solid #f0f0f0; }
+  .sess-search { width: 100%; height: 28px; padding: 0 9px; border: 1px solid #e6e6e6; border-radius: 6px; font-size: 12.5px; font-family: inherit; color: #1a1a1a; outline: none; background: #fff; }
+  .sess-search:focus { border-color: #c9c9c9; }
+  .sess-count { padding: 7px 2px 0; font-size: 11.5px; color: #a0a0a0; }
+  .sess-items { flex: 1; overflow-y: auto; padding: 6px; }
+  .sess-item { padding: 8px 9px; border-radius: 7px; cursor: pointer; border: 1px solid transparent; margin-bottom: 1px; }
+  .sess-item:hover { background: #f5f5f5; }
+  .sess-item.on { background: #e9f7f4; border-color: #c8e9e2; }
+  .sess-item-t { font-size: 12.5px; color: #1a1a1a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sess-item-m { font-size: 11px; color: #a0a0a0; margin-top: 2px; }
+  .sess-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  .sess-head { display: flex; align-items: center; gap: 12px; padding: 11px 16px; border-bottom: 1px solid #ececec; flex: none; }
+  .sess-titlebox { min-width: 0; flex: 1; }
+  .sess-head h2 { margin: 0; font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sess-cwd { font-size: 11px; color: #a0a0a0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: ui-monospace, Menlo, Consolas, monospace; }
+  .sess-stats { display: flex; border-bottom: 1px solid #ececec; flex: none; overflow-x: auto; }
+  .sess-stat { padding: 8px 15px; border-right: 1px solid #f2f2f2; flex: none; }
+  .sess-stat b { display: block; font-size: 15px; font-weight: 500; letter-spacing: -.01em; }
+  .sess-stat i { font-style: normal; font-size: 11px; color: #a0a0a0; }
+  .sess-body { flex: 1; display: flex; overflow: hidden; }
+  .sess-chart { flex: 1; overflow: auto; min-width: 0; }
+  .sess-detail { width: 396px; flex: none; border-left: 1px solid #ececec; overflow-y: auto; }
+  .sess-hint { padding: 36px 20px; text-align: center; color: #b0b0b0; font-size: 12.5px; line-height: 1.9; }
+
+  .sw-head { display: grid; grid-template-columns: 268px 1fr 66px; align-items: center; height: 32px; padding: 0 14px; position: sticky; top: 0; background: #fff; border-bottom: 1px solid #ececec; font-size: 11px; color: #a0a0a0; z-index: 3; }
+  .sw-head .sw-track { position: relative; height: 100%; background-image: linear-gradient(to right, #f4f4f4 1px, transparent 1px); background-size: 25% 100%; }
+  .sw-head em { position: absolute; top: 8px; font-style: normal; font-size: 10.5px; color: #b0b0b0; transform: translateX(-50%); white-space: nowrap; }
+  .sw-head .sw-note { margin-left: 7px; color: #c4c4c4; }
+  .sw-row { display: grid; grid-template-columns: 268px 1fr 66px; align-items: center; height: 29px; padding: 0 14px; cursor: pointer; border-bottom: 1px solid #f8f8f8; }
+  .sw-row:hover { background: #fafafa; }
+  .sw-row.on { background: #e9f7f4; }
+  .sw-row.on .sw-t { color: #0b6b60; font-weight: 500; }
+  .sw-name { display: flex; align-items: center; gap: 6px; min-width: 0; padding-right: 12px; }
+  .sw-dot { width: 6px; height: 6px; border-radius: 2px; flex: none; }
+  .sw-t { flex: 1; min-width: 0; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sw-m { font-size: 10px; color: #b0b0b0; flex: none; }
+  .sw-track { position: relative; height: 29px; }
+  .sw-bar { position: absolute; top: 50%; transform: translateY(-50%); height: 8px; border-radius: 2px; min-width: 2px; opacity: .85; }
+  .sw-row:hover .sw-bar, .sw-row.on .sw-bar { opacity: 1; }
+  .sw-dur { font-size: 11px; color: #6a6a6a; text-align: right; }
+  .k-user { background: #c3c3c3; }
+  .k-reasoning { background: #8b83e0; }
+  .k-call { background: #3d8bd8; }
+  .k-result { background: #1a9c78; }
+  .k-assistant { background: #6ba32c; }
+  .k-task { background: #e39b26; }
+  .k-inject { background: #dcdcdc; }
+
+  .se { padding: 9px 14px; border-bottom: 1px solid #f4f4f4; }
+  .se-head { padding: 10px 14px; border-bottom: 1px solid #ececec; position: sticky; top: 0; background: #fff; z-index: 2; }
+  .se-head h2 { margin: 0 0 2px; font-size: 13px; font-weight: 600; }
+  .se-head p { margin: 0; font-size: 11px; color: #a0a0a0; }
+  .se-top { display: flex; align-items: baseline; gap: 7px; margin-bottom: 2px; }
+  .se-tag { font-size: 10px; padding: 1px 5px; border-radius: 3px; font-weight: 500; flex: none; }
+  .se-tag.user { background: #f0f0f0; color: #4a4a4a; }
+  .se-tag.reasoning { background: #eeedfe; color: #3c3489; }
+  .se-tag.call { background: #e6f1fb; color: #185fa5; }
+  .se-tag.result { background: #e1f5ee; color: #0f6e56; }
+  .se-tag.assistant { background: #eaf3de; color: #3b6d11; }
+  .se-tag.preamble { background: #f1f3f6; color: #6b7280; }
+  .se-tag.answer { background: #eaf3de; color: #3b6d11; }
+  .se-tag.task { background: #faeeda; color: #ba7517; }
+  .se-tag.inject { background: #f6f5f2; color: #96958f; }
+  .se-name { font-size: 12px; font-weight: 500; }
+  .se-name.bad { color: #c0392b; }
+  .se-meta { margin-left: auto; font-size: 10.5px; color: #b0b0b0; white-space: nowrap; }
+  .se-text { font-size: 12px; color: #5a5a5a; white-space: pre-wrap; word-break: break-word; max-height: 140px; overflow-y: auto; margin-top: 3px; }
+  .se-text.mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11px; line-height: 1.5; }
+  .se-more { display: block; margin-top: 5px; font-size: 11px; color: #0d8a7c; cursor: pointer; background: none; border: 0; padding: 0; font-family: inherit; }
+  .se-raw { margin-top: 7px; border-top: 1px dashed #ececec; padding-top: 5px; }
+  .se-raw summary { font-size: 11px; color: #a0a0a0; cursor: pointer; list-style: none; }
+  .se-raw summary::-webkit-details-marker { display: none; }
+  .se-raw summary::before { content: "▸ "; color: #b0b0b0; }
+  .se-raw[open] summary::before { content: "▾ "; }
+  .se-raw summary:hover { color: #0d8a7c; }
+  .se-raw .se-text { margin-top: 5px; max-height: 300px; background: #fafafa; padding: 7px 9px; border-radius: 5px; font-size: 10.5px; }
 </style>
 </head>
 <body>
@@ -215,6 +294,7 @@
     <div class="seg viewseg" id="viewSeg">
       <button class="on" data-v="usage">用量看板</button>
       <button data-v="adv">进阶看板</button>
+      <button data-v="sess">会话明细</button>
     </div>
   </div>
   <div class="top-actions">
@@ -439,6 +519,39 @@
     <b>数据来源</b>：本机 <span class="num">~/.workbuddy/projects/*/*.jsonl</span> 里的 <span class="num">function_call</span> 与 <span class="num">function_call_result</span> 记录，两者按 <span class="num">callId</span> 配对，差值即为这次调用的耗时。<br>
     <b>三类互不重叠</b>：<b>技能</b> = <span class="num">Skill</span> 调用；<b>命令</b> = <span class="num">Bash</span> 与终端命令；<b>工具</b> = 其余全部函数调用（含 MCP，<span class="num">DeferExecuteTool</span> 按真实工具名归并）。<br>
     <b>完成率</b> = 状态为 completed 的结果数 ÷ 有结果的调用数，被中断或无结果的调用不计入分母。<b>命令族</b>取命令的首个可执行名，自动剥离开头的 <span class="num">cd … &&</span>、环境变量与 <span class="num">sudo</span>。<b>快照</b> <span id="advGenTime">—</span>，<b>版本</b> v<span class="num">__VERSION__</span>。
+  </div>
+</div>
+
+<div id="viewSess" hidden>
+  <div class="sess-wrap">
+    <aside class="sess-side">
+      <div class="sess-side-hd">
+        <input class="sess-search" id="sessQ" placeholder="筛选标题或目录" autocomplete="off">
+        <div class="sess-count" id="sessCount">加载中…</div>
+      </div>
+      <div class="sess-items" id="sessItems"></div>
+    </aside>
+    <div class="sess-main">
+      <div class="sess-head">
+        <div class="sess-titlebox">
+          <h2 id="sessTitle">选择一个会话</h2>
+          <div class="sess-cwd" id="sessCwd"></div>
+        </div>
+        <div class="seg" id="sessGranSeg">
+          <button data-g="turn" class="on">按轮次</button>
+          <button data-g="step">按步骤</button>
+        </div>
+      </div>
+      <div class="sess-stats" id="sessStats"></div>
+      <div class="sess-body">
+        <div class="sess-chart" id="sessChart">
+          <div class="sess-hint">从左边挑一个会话</div>
+        </div>
+        <div class="sess-detail" id="sessDetail">
+          <div class="sess-hint">点任意一行，<br>看这步的入参、返回和 token</div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -958,21 +1071,231 @@ function renderAll() {
   if (view === 'adv') { try { renderAdv(); } catch (e) { console.warn(e); } }
 }
 
+// ---------- 会话明细：把每次思考、每次工具调用摊成一条执行瀑布 ----------
+let SE_LIST = null, SE_CUR = null, SE_DATA = null, SE_GRAN = 'turn';
+
+const seDur = u => u.raw_dur != null ? u.raw_dur : (u.end_ts - u.start_ts) / 1000;
+const hashView = () => {
+  const h = location.hash.replace('#', '');
+  return h === 'adv' ? 'adv' : (h === 'sess' ? 'sess' : 'usage');
+};
+
+async function ensureSess() {
+  if (SE_LIST) { renderSessList(); return; }
+  const host = document.getElementById('sessItems');
+  host.innerHTML = '<div class="sess-hint">正在扫描会话…<br>首次约需几秒</div>';
+  try {
+    const r = await fetch('/api/sessions', { cache: 'no-store' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    SE_LIST = await r.json();
+  } catch (e) {
+    host.innerHTML = '<div class="sess-hint">读不到会话列表。<br>静态快照不含明细数据，<br>请用 start.bat 启动服务后访问。</div>';
+    document.getElementById('sessCount').textContent = '';
+    return;
+  }
+  document.getElementById('sessCount').textContent = SE_LIST.length + ' 个会话 · 按时间倒序';
+  renderSessList();
+  const top = SE_LIST.slice().sort((a, b) => b.events - a.events)[0];
+  if (top) openSess(top.sid);
+}
+
+function renderSessList() {
+  const q = (document.getElementById('sessQ').value || '').trim().toLowerCase();
+  const rows = (SE_LIST || []).filter(s => !q || (s.title + ' ' + s.cwd).toLowerCase().includes(q)).slice(0, 300);
+  document.getElementById('sessItems').innerHTML = rows.map(s =>
+    '<div class="sess-item' + (s.sid === SE_CUR ? ' on' : '') + '" data-sid="' + s.sid + '">' +
+      '<div class="sess-item-t">' + escapeHtml(s.title) + '</div>' +
+      '<div class="sess-item-m num">' + dateOf(s.start) + ' · ' + s.events + ' 事件 · ' + s.calls + ' 调用 · ' + fmtTok(s.tokens) + ' tok</div>' +
+    '</div>').join('');
+}
+
+async function openSess(sid, allowFallback) {
+  SE_CUR = sid;
+  renderSessList();
+  const chart = document.getElementById('sessChart');
+  chart.innerHTML = '<div class="sess-hint">解析会话…</div>';
+  document.getElementById('sessDetail').innerHTML = '<div class="sess-hint">点任意一行，<br>看这步的入参、返回和 token</div>';
+
+  let d;
+  try {
+    const r = await fetch('/api/session/' + encodeURIComponent(sid) + '?granularity=' + SE_GRAN, { cache: 'no-store' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    d = await r.json();
+  } catch (e) {
+    chart.innerHTML = '<div class="sess-hint">读取失败：' + escapeHtml(e.message) + '</div>';
+    return;
+  }
+  SE_DATA = d;
+
+  // 只有一两轮的会话，轮次视图上就一个点，自动落到步骤级
+  if (allowFallback !== false && SE_GRAN === 'turn' && d.units.length <= 2 && d.totals.events > 20) {
+    SE_GRAN = 'step';
+    syncSessGran();
+    return openSess(sid, false);
+  }
+
+  document.getElementById('sessTitle').textContent = d.title;
+  document.getElementById('sessCwd').textContent = d.cwd || '';
+  document.getElementById('sessStats').innerHTML = [
+    ['事件', d.totals.events], ['轮次', d.totals.turns], ['工具调用', d.totals.calls],
+    ['总 token', fmtTok(d.totals.tokens)], ['失败', d.totals.failed],
+    ['跨度', fmtDur((d.totals.end - d.totals.start) / 1000)]
+  ].map(x => '<div class="sess-stat"><b class="num">' + x[1] + '</b><i>' + x[0] + '</i></div>').join('');
+  renderSessChart();
+}
+
+function sessStepLabel(u) {
+  const e = u.events[0] || {};
+  const name = e.kind === 'assistant' ? (e.preamble ? '说明' : '答复') : ({
+    user: '提问', reasoning: '思考',
+    call: e.tool || '调用', result: (e.tool || '') + ' 返回',
+    task: '后台任务', inject: '注入'
+  }[e.kind] || e.kind);
+  const t = (e.text || '').replace(/\n/g, ' ').slice(0, 44);
+  return t ? name + ' · ' + t : name;
+}
+
+function renderSessChart() {
+  const d = SE_DATA;
+  if (!d) return;
+  const us = d.units || [];
+  const host = document.getElementById('sessChart');
+  if (!us.length) { host.innerHTML = '<div class="sess-hint">没有可回放的事件</div>'; return; }
+
+  // 轮次少，位置有意义 → 真实时间轴；步骤是纯串行的，共享时间轴每步只占千分之几，
+  // 全成看不见的细线，所以按耗时归一（95 分位截断，防止一个几十分钟的离群值毁掉整张图）。
+  const useTime = SE_GRAN === 'turn';
+  const T0 = us[0].start_ts;
+  const T1 = Math.max.apply(null, us.map(u => u.end_ts).concat([T0 + 1]));
+  const span = Math.max(T1 - T0, 1);
+  const sortedDur = us.map(seDur).sort((a, b) => a - b);
+  const cap = Math.max(sortedDur[Math.floor(sortedDur.length * 0.95)] || 0.001, 0.001);
+
+  const rows = us.map((u, i) => {
+    const dur = seDur(u);
+    const l = useTime ? Math.max(0, (u.start_ts - T0) / span * 100) : 0;
+    const w = useTime
+      ? Math.max((u.end_ts - u.start_ts) / span * 100, 0.35)
+      : Math.max(Math.min(dur / cap, 1) * 100, 0.8);
+    const kind = (u.events[0] || {}).kind || 'user';
+    const label = SE_GRAN === 'turn'
+      ? '第 ' + (u.turn + 1) + ' 轮 · ' + (u.prompt ? u.prompt.replace(/\n/g, ' ').slice(0, 38) : '(无提问)')
+      : sessStepLabel(u);
+    const meta = u.calls ? u.calls + ' 调用' : ((u.tokens_in + u.tokens_out) ? fmtTok(u.tokens_in + u.tokens_out) : '');
+    return '<div class="sw-row" data-i="' + i + '">' +
+        '<div class="sw-name"><span class="sw-dot k-' + kind + '"></span>' +
+          '<span class="sw-t">' + escapeHtml(label) + '</span>' +
+          '<span class="sw-m num">' + meta + '</span></div>' +
+        '<div class="sw-track"><div class="sw-bar k-' + kind + '" style="left:' + l.toFixed(2) + '%;width:' + w.toFixed(2) + '%"></div></div>' +
+        '<div class="sw-dur num">' + fmtDur(dur) + '</div>' +
+      '</div>';
+  }).join('');
+
+  const ticks = [0, 1, 2, 3, 4].map(i =>
+    '<em style="left:' + (i * 25) + '%">' + fmtDur(useTime ? span / 1000 * i / 4 : cap * i / 4) + '</em>').join('');
+  const note = useTime
+    ? (d.compressed ? '<span class="sw-note" title="超过 3 秒的空闲已压缩，右侧耗时仍为真实值">空闲已压缩</span>' : '')
+    : '<span class="sw-note" title="按 95 分位截断，超出的按满格算；右侧数字是真实值">条长 = 相对耗时</span>';
+
+  host.innerHTML =
+    '<div class="sw-head"><div>' + (SE_GRAN === 'turn' ? '轮次' : '步骤') +
+      '<span class="sw-note">' + us.length + '</span>' + note + '</div>' +
+      '<div class="sw-track">' + ticks + '</div>' +
+      '<div style="text-align:right">耗时</div></div>' + rows;
+
+  host.querySelectorAll('.sw-row').forEach(el => {
+    el.addEventListener('click', () => {
+      host.querySelectorAll('.sw-row').forEach(x => x.classList.toggle('on', x === el));
+      showSessUnit(+el.dataset.i);
+    });
+  });
+  const first = host.querySelector('.sw-row');
+  if (first) { first.classList.add('on'); showSessUnit(0); }
+}
+
+function showSessUnit(i) {
+  const u = SE_DATA && SE_DATA.units[i];
+  if (!u) return;
+  const head = '<div class="se-head"><h2>' +
+      (SE_GRAN === 'turn' ? '第 ' + (u.turn + 1) + ' 轮' : '步骤 ' + (i + 1)) + '</h2>' +
+      '<p class="num">' + u.calls + ' 次调用 · 输入 ' + fmtTok(u.tokens_in) +
+      ' · 输出 ' + fmtTok(u.tokens_out) + ' · ' + fmtDur(seDur(u)) + '</p></div>';
+
+  const rows = u.events.map(ev => {
+    const tag = ev.kind === 'assistant' ? (ev.preamble ? '说明' : '答复')
+      : ({ user: '提问', reasoning: '思考', call: '调用',
+           result: '返回', task: '任务', inject: '注入' }[ev.kind] || ev.kind);
+    const tagCls = ev.kind === 'assistant' ? (ev.preamble ? 'preamble' : 'answer') : ev.kind;
+    const meta = (ev.tokens_in + ev.tokens_out ? fmtTok(ev.tokens_in + ev.tokens_out) + ' tok ' : '') +
+      (ev.duration ? ev.duration.toFixed(2) + 's ' : '') +
+      (ev.status && ev.status !== 'completed' ? ev.status : '');
+    const body = ev.detail || ev.text || '';
+    const mono = ev.kind === 'call' || ev.kind === 'result';
+    const long = body.length > 500;
+    const hasRaw = ev.raw && ev.raw.trim() && ev.raw.trim() !== body.trim();
+    const rawShown = hasRaw ? (ev.raw.length > 6000 ? ev.raw.slice(0, 6000) + '\n…（已截断）' : ev.raw) : '';
+    return '<div class="se">' +
+        '<div class="se-top"><span class="se-tag ' + tagCls + '">' + tag + '</span>' +
+          '<span class="se-name' + (ev.status && ev.status !== 'completed' ? ' bad' : '') + '">' + escapeHtml(ev.tool || '') + '</span>' +
+          '<span class="se-meta num">' + meta + '</span></div>' +
+        (body ? '<div class="se-text' + (mono ? ' mono' : '') + '">' + escapeHtml(long ? body.slice(0, 500) : body) + '</div>' : '') +
+        (long ? '<button class="se-more" onclick="expandSe(this)">展开全部（' + body.length + ' 字）</button>' : '') +
+        (hasRaw ? '<details class="se-raw"><summary>模型实际收到的原始输入（' + ev.raw.length +
+          ' 字，含系统注入）</summary><div class="se-text">' + escapeHtml(rawShown) + '</div></details>' : '') +
+      '</div>';
+  }).join('');
+
+  const host = document.getElementById('sessDetail');
+  host.innerHTML = head + rows;
+  host.scrollTop = 0;
+}
+
+function expandSe(btn) {
+  const box = btn.previousElementSibling;
+  box.style.maxHeight = 'none';
+  btn.remove();
+}
+
+function syncSessGran() {
+  document.querySelectorAll('#sessGranSeg button').forEach(b => b.classList.toggle('on', b.dataset.g === SE_GRAN));
+}
+
+document.getElementById('sessItems').addEventListener('click', e => {
+  const it = e.target.closest('.sess-item');
+  if (it) openSess(it.dataset.sid);
+});
+document.getElementById('sessQ').addEventListener('input', renderSessList);
+document.getElementById('sessGranSeg').addEventListener('click', e => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  const g = b.dataset.g;
+  if (g === SE_GRAN) return;
+  SE_GRAN = g;
+  syncSessGran();
+  if (SE_CUR) openSess(SE_CUR, false);
+});
+
 // 两个视图共用一个页面、同一份数据：切换只改 DOM 可见性，不重新请求
 function setView(v, fromHash) {
-  view = v === 'adv' ? 'adv' : 'usage';
+  view = (v === 'adv' || v === 'sess') ? v : 'usage';
   document.querySelectorAll('#viewSeg button').forEach(b => b.classList.toggle('on', b.dataset.v === view));
   document.getElementById('viewUsage').hidden = view !== 'usage';
   document.getElementById('viewAdv').hidden = view !== 'adv';
+  document.getElementById('viewSess').hidden = view !== 'sess';
   document.getElementById('scopeFilter').style.display = view === 'usage' ? '' : 'none';
+  // 会话明细自己带筛选，上方的范围/模型筛选对它没意义
+  const fbar = document.querySelector('.filterbar');
+  if (fbar) fbar.style.display = view === 'sess' ? 'none' : '';
   if (!fromHash) {
-    const h = view === 'adv' ? '#adv' : '#usage';
+    const h = view === 'adv' ? '#adv' : (view === 'sess' ? '#sess' : '#usage');
     if (location.hash !== h) {
       try { history.replaceState(null, '', h); } catch (e) { location.hash = h; }
     }
   }
   if (view === 'adv') {
     try { renderAdv(); } catch (e) { console.warn(e); }
+  } else if (view === 'sess') {
+    try { ensureSess(); } catch (e) { console.warn(e); }
   } else {
     // 隐藏期间容器宽度为 0，回来时按真实宽度重绘一次
     try { renderChart(filtered()); } catch (e) { console.warn(e); }
@@ -1089,7 +1412,7 @@ async function refresh(silent) {
     b.addEventListener('click', () => setView(b.dataset.v));
   });
   window.addEventListener('hashchange', () => {
-    setView(location.hash.replace('#', '') === 'adv' ? 'adv' : 'usage', true);
+    setView(hashView(), true);
   });
   document.getElementById('syncBtn').addEventListener('click', () => refresh(false));
   document.getElementById('autoBtn').addEventListener('click', () => {
@@ -1118,7 +1441,7 @@ async function refresh(silent) {
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrawer(); });
   document.getElementById('genTime').textContent = META.generated || '—';
   renderAll();
-  setView(location.hash.replace('#', '') === 'adv' ? 'adv' : 'usage', true);
+  setView(hashView(), true);
   let rt;
   window.addEventListener('resize', () => {
     clearTimeout(rt);
