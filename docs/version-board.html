@@ -170,7 +170,7 @@ footer code{font-family:var(--mono);color:var(--ink2)}
   <div class="wrap">
     <nav class="filters" id="filters"></nav>
     <div class="acts">
-      <span class="gen">数据源 <code id="src">docs/versions.json</code> · 生成于 2026-11-10 09:34</span>
+      <span class="gen">数据源 <code id="src">docs/versions.json</code> · 生成于 2026-11-10 09:35</span>
       <button id="print" type="button">打印 / 导出 PDF</button>
     </div>
   </div>
@@ -222,7 +222,7 @@ footer code{font-family:var(--mono);color:var(--ink2)}
   "versions": [
     {
       "version": "0.2.0",
-      "status": "iterating",
+      "status": "released",
       "date": "2026-11-10",
       "theme": "会话明细：把每次思考和工具调用摊成可回放的瀑布",
       "business": "以前只能看到一轮对话花了多少 token，却看不到里面到底发生了什么：哪一步在思考、调了哪个工具、返回了什么、慢在哪。这一版加了「会话明细」，左侧挑会话、中间一条执行瀑布、右侧看每一步的原文——提问、思考链、工具入参、工具返回、单步 token 与耗时，还能展开看模型当次实际收到的完整输入（含客户端注入的系统上下文）。用来回答三个问题：这轮为什么慢、哪一步在烧钱、模型到底看到了什么。全部在本机解析，不联网。",
@@ -247,7 +247,8 @@ footer code{font-family:var(--mono);color:var(--ink2)}
           "关闭 HTTPServer 的端口复用：重复启动会提示端口占用并退出，不再出现多个实例抢同一端口、请求随机落到旧代码",
           "端口被占用时的提示给出直接访问地址与换端口方式，避免用户反复双击 start.bat"
         ]
-      }
+      },
+      "tag": "v0.2.0"
     },
     {
       "version": "0.1.0",
