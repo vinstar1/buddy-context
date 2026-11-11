@@ -6,7 +6,7 @@ A zero-dependency local dashboard. It reads the runtime data the **WorkBuddy des
 
 Open it in a browser and you get a plain white page: four metric cards, a daily trend chart, a per-model cost table, and a request log you can click into for detail. A switcher at the top toggles between the **usage view** and an **advanced view** that covers only skills, tools and commands (see below); `index.html#adv` opens the latter directly.
 
-![Buddy dashboard screenshot](demo.png)
+![Buddy dashboard screenshot](docs/images/demo.png)
 
 > The numbers in the screenshot are sample data. Real figures come from the usage records under `~/.workbuddy` on your own machine.
 
@@ -89,7 +89,7 @@ Third-party models (glm / kimi / minimax / mimo and friends) have no public pric
 
 Switch to 「进阶看板」 at the top, or open `index.html#adv` directly. This page ignores tokens and money and looks at three things only. The three buckets do not overlap, and together they account for every function call:
 
-![Advanced dashboard screenshot](demo-adv.png)
+![Advanced dashboard screenshot](docs/images/demo-adv.png)
 
 | Bucket | How it is identified | What you see |
 | --- | --- | --- |
