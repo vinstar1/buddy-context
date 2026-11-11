@@ -170,7 +170,7 @@ footer code{font-family:var(--mono);color:var(--ink2)}
   <div class="wrap">
     <nav class="filters" id="filters"></nav>
     <div class="acts">
-      <span class="gen">数据源 <code id="src">docs/versions.json</code> · 生成于 2026-11-11 09:50</span>
+      <span class="gen">数据源 <code id="src">docs/versions.json</code> · 生成于 2026-11-11 09:57</span>
       <button id="print" type="button">打印 / 导出 PDF</button>
     </div>
   </div>
@@ -231,6 +231,28 @@ footer code{font-family:var(--mono);color:var(--ink2)}
   },
   "updated": "2026-11-11",
   "versions": [
+    {
+      "version": "0.2.2",
+      "status": "released",
+      "date": "2026-11-11",
+      "theme": "启动失败不再一闪而过",
+      "business": "上一版修好了「双击跳应用商店」，但双击仍然可能没反应：窗口一闪就关，浏览器也没打开。原因不是启动器，是看板自己——昨天开的那个还占着 8765 端口，新启动的这一个只能退出，而退出码又被程序丢掉了，启动器以为一切正常，就把窗口关了，人看到的就是「点了没动静」。这一版把三种情况分开说清楚：已经开着一个就把浏览器直接指过去；开着的是旧版本就告诉你它跑着哪个版本、该关哪个窗口；端口被别的软件占了就给出换端口的具体命令。双击之后屏幕上一定有话说，不会再猜。",
+      "feedback": [],
+      "changes": {
+        "用户端": [
+          "看板已经在运行时再双击 start.bat：直接打开浏览器到已有实例，不再一闪而过",
+          "端口上跑的是旧版本实例时：明确提示「跑着 vX，当前代码 vY」，并说明先关旧窗口或用 --port 另开一个",
+          "端口被其他程序占用时：给出换端口的具体命令，不再只说「已被占用」"
+        ],
+        "维护": [
+          "dashboard.py 的入口改为 raise SystemExit(main())：此前返回值被丢弃，端口占用、数据目录缺失等异常分支的退出码都是 0，启动器的 pause 不触发，窗口瞬间关闭",
+          "新增 PRODUCT 常量，/api/health 与启动判断共用同一个产品标识，避免两处硬编码漂移",
+          "新增 running_instance()：按 /api/health 的 product 字段确认端口上是自己人，别的本地服务不会被误判成看板",
+          "start.bat 的 pause 行为因此真正生效：异常退出时窗口留住，报错可以看清"
+        ]
+      },
+      "tag": "v0.2.2"
+    },
     {
       "version": "0.2.1",
       "status": "released",

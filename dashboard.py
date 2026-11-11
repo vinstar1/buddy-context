@@ -37,6 +37,8 @@ import statistics
 import sys
 import threading
 import time
+import urllib.error
+import urllib.request
 import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -64,6 +66,8 @@ def read_version():
 
 
 APP_VERSION = read_version()
+# 健康检查里的产品标识：启动器与 check 都靠它确认端口上跑的是自己人
+PRODUCT = "buddy-context"
 
 # ---------- 价格表 ----------
 # 元 / 百万 tokens
@@ -748,6 +752,20 @@ class Server(ThreadingHTTPServer):
     daemon_threads = True
 
 
+def running_instance(port):
+    """端口上跑的是不是我们自己的看板？是就返回健康检查的内容，否则 None。
+
+    区分「重复双击」和「端口被别人占了」全靠这一步：前者应该直接把浏览器
+    指过去，后者才该报错。只认 product 字段，别把别的本地服务当成自己。
+    """
+    try:
+        with urllib.request.urlopen("http://127.0.0.1:%d/api/health" % port, timeout=1.0) as resp:
+            info = json.loads(resp.read().decode("utf-8"))
+    except (urllib.error.URLError, OSError, ValueError):
+        return None
+    return info if isinstance(info, dict) and info.get("product") == PRODUCT else None
+
+
 class Handler(BaseHTTPRequestHandler):
     server_version = "BuddyDashboard/" + APP_VERSION
 
@@ -765,7 +783,7 @@ class Handler(BaseHTTPRequestHandler):
             # 发版后先打这里：返回的 version 要和 git tag、docs/versions.json 里的一致
             self._send(200, json.dumps({
                 "ok": True,
-                "product": "buddy-context",
+                "product": PRODUCT,
                 "version": APP_VERSION,
             }, ensure_ascii=False))
             return
@@ -863,9 +881,23 @@ def main():
     try:
         srv = Server(("127.0.0.1", args.port), Handler)
     except OSError:
-        print("端口 %d 已被占用，应该已经有一个看板在运行。" % args.port)
-        print("直接打开 %s 就能用；想换端口用 --port %d。" % (url, args.port + 1))
-        print("如果是改完代码要重启：先关掉原来的窗口，再双击 start.bat。")
+        # 端口被占用分三种情况，行为要分开：重复双击、旧版本没关、被别人占了
+        info = running_instance(args.port)
+        if info and info.get("version") == APP_VERSION:
+            print("看板已经在运行（v%s），直接用它就好。" % APP_VERSION)
+            print("地址：%s" % url)
+            if not args.no_browser:
+                webbrowser.open(url)
+            return 0
+        if info:
+            print("端口 %d 上是另一个版本的看板：跑着 v%s，当前代码是 v%s。"
+                  % (args.port, info.get("version") or "未知", APP_VERSION))
+            print("先关掉那个窗口再双击 start.bat；想两个都留着就用 --port %d。"
+                  % (args.port + 1))
+            return 1
+        print("端口 %d 被别的程序占用了，看板没能启动。" % args.port)
+        print("换一个端口：python dashboard.py --port %d，或先关掉占用它的程序。"
+              % (args.port + 1))
         return 1
     print("看板已启动: %s   (v%s，Ctrl+C 停止)" % (url, APP_VERSION))
     if not args.no_browser:
@@ -878,4 +910,7 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    # 必须把返回码交给系统：端口占用、数据目录缺失等分支都靠它让启动器
+    # 把窗口留住。以前直接写 main()，异常路径的退出码被丢掉，双击后
+    # 窗口一闪就关，看起来像「点了没反应」。
+    raise SystemExit(main())
