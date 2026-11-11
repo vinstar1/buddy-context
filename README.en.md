@@ -37,6 +37,18 @@ If you would rather not type commands:
 - Windows: double-click `start.bat`
 - macOS / Linux: `./start.sh`
 
+`start.bat` hunts down a working Python for you, in this order: `WORKBUDDY_PYTHON` if set →
+the Python bundled with WorkBuddy (`%USERPROFILE%\.workbuddy\binaries\python`) → the
+`resources\vendor\python` inside a WorkBuddy install → whatever `py -3` resolves to → `python` /
+`python3` on PATH → common install locations (Anaconda, Miniconda, `Programs\Python\Python3*`,
+`C:\Python3*`). Every candidate has to survive a real `python -c "import sys"`, so the 0-byte
+Microsoft Store `python.exe` stub is skipped — that stub is what used to send a double-click
+straight to the Store.
+
+> Keep `start.bat` as **GBK (cp936) + CRLF**. cmd mis-seeks on UTF-8 batch files that contain
+> CJK text, so `goto` / `call` can resume mid-line and spew mojibake. Re-saving it as UTF-8
+> brings the bug back.
+
 「立即同步」 (Sync now) re-scans and redraws. With 「自动刷新」 (Auto refresh) on, it syncs silently every 60 seconds.
 
 ## Version

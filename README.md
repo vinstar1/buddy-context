@@ -37,6 +37,22 @@ python dashboard.py --data-dir D:/wb-data   # 指定数据目录
 - Windows：双击 `start.bat`
 - macOS / Linux：`./start.sh`
 
+`start.bat` 会自动挑一个能用的 Python，按这个顺序找：
+
+1. 环境变量 `WORKBUDDY_PYTHON` 指定的路径
+2. WorkBuddy 自带 Python（`%USERPROFILE%\.workbuddy\binaries\python`）
+3. WorkBuddy 安装目录里的 `resources\vendor\python`
+4. `py -3` 启动器解析出的真实 exe
+5. PATH 里的 `python` / `python3`
+6. 常见安装位置（Anaconda、Miniconda、`Programs\Python\Python3*`、`C:\Python3*`）
+
+每个候选都要真跑一次 `python -c "import sys"` 才算数，所以 Windows 商店那个 0 字节的
+`python.exe` 占位程序会被自动跳过——以前双击 `start.bat` 会跳应用商店，就是踩了这个坑。
+
+> `start.bat` 本身必须保持 **GBK(cp936) + CRLF**。cmd 解析 UTF-8 中文批处理时
+> `goto` / `call` 会按错误字节偏移跳转，从某行中间接着执行，表现为乱码加一串
+> 「不是内部或外部命令」。用编辑器的 UTF-8 另存会把这个问题带回来。
+
 页面上的「立即同步」会重新扫描并重绘；「自动刷新」开启后每 60 秒静默同步一次。
 
 ## 版本

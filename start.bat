@@ -1,26 +1,142 @@
 @echo off
-chcp 65001 >nul
+REM ============================================================
+REM  ×¢Òâ£º±¾ÎÄ¼ş±ØĞë±£´æÎª GBK(cp936) + CRLF ĞĞÎ²¡£
+REM  cmd ½âÎö UTF-8 ÖĞÎÄÅú´¦ÀíÊ±£¬goto/call »á°´´íÎóµÄ×Ö½ÚÆ«ÒÆ
+REM  Ìø×ª£¬µ¼ÖÂ´ÓÄ³ĞĞÖĞ¼ä¼ÌĞøÖ´ĞĞ£¨¾­µäÂÒÂë + "'xxx' ²»ÊÇÄÚ²¿
+REM  »òÍâ²¿ÃüÁî"£©¡£¸ÄÕâ¸öÎÄ¼şÇëÓÃ GBK ÖØĞÂ±£´æ£¬±ğ´æ³É UTF-8¡£
+REM ============================================================
+chcp 936 >nul
+setlocal EnableExtensions
 cd /d "%~dp0"
+title buddy-context ÓÃÁ¿¿´°å
 
-where python >nul 2>nul
-if %errorlevel%==0 (
-  python dashboard.py %*
-  goto :end
+REM ============================================================
+REM  ¿´°åÆô¶¯Æ÷
+REM
+REM  ÎªÊ²Ã´²»ÄÜÖ±½ÓĞ´ python dashboard.py£º
+REM  ºÜ¶àÈË»úÆ÷ÉÏ PATH ÀïµÄ python ÊÇ Microsoft Store µÄÕ¼Î»³ÌĞò
+REM  £¨%LOCALAPPDATA%\Microsoft\WindowsApps\python.exe£©£¬Ë«»÷Ê±
+REM  Ëü²»Æô¶¯ Python£¬¶øÊÇµ¯Ó¦ÓÃÉÌµê¡£
+REM
+REM  ËùÒÔÕâÀï×öÁ½µÀ¹ıÂË£º
+REM    1. °´Î»ÖÃÅÅ³ı ¡ª¡ª ¸¸Ä¿Â¼ÊÇ WindowsApps µÄÖ±½ÓÌø¹ı£»
+REM    2. °´ĞĞÎªÑéÖ¤ ¡ª¡ª ÕæµÄÖ´ĞĞÒ»´Î£¬ÅÜ²»Í¨µÄÒ²Ìø¹ı¡£
+REM  Ë³ĞòÉÏÓÅÏÈÓÃ WorkBuddy ×Ô´øµÄ Python£¨Ò»¶¨´æÔÚÇÒÊÇÍêÕû°æ£©¡£
+REM ============================================================
+
+set "PY="
+set "PYSRC="
+
+REM ---- 0) »·¾³±äÁ¿ÏÔÊ½Ö¸¶¨£¬ÓÅÏÈ¼¶×î¸ß ----
+if not "%WORKBUDDY_PYTHON%"=="" call :try "%WORKBUDDY_PYTHON%" "»·¾³±äÁ¿ WORKBUDDY_PYTHON"
+if defined PY goto :run
+
+REM ---- 1) WorkBuddy ×Ô´ø Python£º~/.workbuddy/binaries/python ----
+set "WBV=%USERPROFILE%\.workbuddy\binaries\python\versions"
+set "CURVER="
+if exist "%WBV%\current" set /p CURVER=<"%WBV%\current"
+if defined CURVER call :try "%WBV%\%CURVER%\python.exe" "WorkBuddy ×Ô´ø Python %CURVER%"
+if defined PY goto :run
+
+for /f "delims=" %%D in ('dir /b /ad /o-n "%WBV%" 2^>nul') do (
+  call :try "%WBV%\%%D\python.exe" "WorkBuddy ×Ô´ø Python %%D"
+  if defined PY goto :run
 )
 
-where py >nul 2>nul
-if %errorlevel%==0 (
-  py -3 dashboard.py %*
-  goto :end
+REM ---- 2) WorkBuddy °²×°Ä¿Â¼ÀïµÄÄÚÖÃ Python ----
+for %%R in (
+  "%ProgramFiles%\WorkBuddy"
+  "%LOCALAPPDATA%\Programs\WorkBuddy"
+  "%LOCALAPPDATA%\WorkBuddy"
+) do (
+  call :try "%%~R\resources\vendor\python\python.exe" "WorkBuddy °²×°Ä¿Â¼ÄÚÖÃ Python"
+  if defined PY goto :run
 )
 
-where python3 >nul 2>nul
-if %errorlevel%==0 (
-  python3 dashboard.py %*
-  goto :end
+REM ---- 3) py Æô¶¯Æ÷£º²»ÊÜÉÌµêÕ¼Î»³ÌĞòÓ°Ïì£¬ÏÈ½âÎö³öÕæÊµ exe ----
+for /f "delims=" %%P in ('py -3 -c "import sys;print(sys.executable)" 2^>nul') do call :try "%%P" "py -3 Æô¶¯Æ÷"
+if defined PY goto :run
+
+REM ---- 4) PATH ÀïµÄ python / python3£¨Õ¼Î»³ÌĞò»áÔÚ :try Àï±»ÌŞ³ı£©----
+for /f "delims=" %%P in ('where python python3 2^>nul') do (
+  call :try "%%P" "PATH ÖĞµÄ python"
+  if defined PY goto :run
 )
 
-echo æœªæ‰¾åˆ° Pythonï¼Œè¯·å…ˆå®‰è£… Python 3.8 æˆ–æ›´é«˜ç‰ˆæœ¬ã€‚
+REM ---- 5) ³£¼û°²×°Î»ÖÃ¶µµ× ----
+call :try "D:\Anaconda\python.exe" "Anaconda"
+if defined PY goto :run
+call :try "%USERPROFILE%\anaconda3\python.exe" "Anaconda£¨ÓÃ»§Ä¿Â¼£©"
+if defined PY goto :run
+call :try "%ProgramData%\Anaconda3\python.exe" "Anaconda£¨ProgramData£©"
+if defined PY goto :run
+call :try "%ProgramData%\miniconda3\python.exe" "Miniconda"
+if defined PY goto :run
+
+for /d %%D in ("%LOCALAPPDATA%\Programs\Python\Python3*") do (
+  call :try "%%~D\python.exe" "Python %%D"
+  if defined PY goto :run
+)
+for /d %%D in ("C:\Python3*") do (
+  call :try "%%~D\python.exe" "Python %%D"
+  if defined PY goto :run
+)
+
+goto :nopython
+
+
+REM ============================================================
+REM  :try  ºòÑ¡ Python Ìå¼ì ¡ª¡ª Í¨¹ı¾Í°Ñ PY / PYSRC ¶¨ÏÂÀ´
+REM        %1 = python.exe Â·¾¶    %2 = À´Ô´ËµÃ÷
+REM ============================================================
+:try
+set "CAND="
+if not "%~1"=="" if exist "%~1" set "CAND=%~1"
+if not defined CAND exit /b 0
+
+REM ÉÌµêÕ¼Î»³ÌĞò£¨0 ×Ö½ÚµÄ×ª·¢¿Ç£©¾ÍÔÚÕâÁ½¸öÄ¿Â¼Àï£¬ÏÈ°´Î»ÖÃÌŞ³ı
+if /i "%~dp1"=="%LOCALAPPDATA%\Microsoft\WindowsApps\" exit /b 0
+if /i "%~dp1"=="%ProgramFiles%\WindowsApps\" exit /b 0
+
+REM ÄÜÕæµÄÅÜÆğÀ´²ÅËãÊı£ºÕ¼Î»³ÌĞò»á·µ»Ø 9009£¬Ëğ»µµÄ°²×°»á±¨ DLL ´íÎó
+"%CAND%" -c "import sys" >nul 2>nul
+if errorlevel 1 exit /b 0
+
+set "PY=%CAND%"
+set "PYSRC=%~2"
+exit /b 0
+
+
+REM ============================================================
+REM  Æô¶¯
+REM ============================================================
+:run
+echo.
+echo   ÓÃÁ¿¿´°åÆô¶¯ÖĞ
+echo   Python £º%PY%
+echo   À´Ô´   £º%PYSRC%
+echo.
+"%PY%" dashboard.py %*
+set "RC=%errorlevel%"
+if not "%RC%"=="0" (
+  echo.
+  echo   ¿´°åÍË³ö£¬·µ»ØÂë %RC%¡£ÉÏÃæµÄ±¨´íĞÅÏ¢¿ÉÒÔ½ØÍ¼·´À¡¡£
+  echo.
+  pause
+)
+endlocal & exit /b %RC%
+
+
+:nopython
+echo.
+echo   Ã»ÕÒµ½¿ÉÓÃµÄ Python 3¡£
+echo.
+echo   ÒÑÒÀ´ÎÊÔ¹ı£ºWorkBuddy ×Ô´ø Python¡¢WorkBuddy °²×°Ä¿Â¼¡¢
+echo               py Æô¶¯Æ÷¡¢PATH ÖĞµÄ python¡¢³£¼û°²×°Î»ÖÃ¡£
+echo.
+echo   Èç¹ûÄãÖªµÀ Python ×°ÔÚÄÄ£¬Ö¸¶¨Ò»´Î¾ÍĞĞ£º
+echo       set WORKBUDDY_PYTHON=C:\path\to\python.exe
+echo       start.bat
+echo.
 pause
-
-:end
+endlocal & exit /b 1
