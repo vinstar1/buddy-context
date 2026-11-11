@@ -11,8 +11,31 @@
     "demo": "已演示",
     "iterating": "开发中"
   },
-  "updated": "2026-11-10",
+  "updated": "2026-11-11",
   "versions": [
+    {
+      "version": "0.2.1",
+      "status": "released",
+      "date": "2026-11-11",
+      "theme": "Windows 双击启动不再跳应用商店",
+      "business": "给同事（或者自己换一台电脑）用的时候，最自然的方式是双击 start.bat，但双击之后弹出来的是微软应用商店，看板根本没起来。毛病不在看板，在机器上的 python：它指向了微软商店的占位程序，谁调用它就等于点了一次「去商店安装」。这一版让启动器自己挑一个真能跑的 Python，优先用 WorkBuddy 自带的那一个，实在没有才提示；双击就开，不用记命令行，也不用先教人怎么配环境。",
+      "feedback": [],
+      "changes": {
+        "用户端": [
+          "双击 start.bat 直接启动看板，不再弹出应用商店",
+          "启动时在窗口里显示实际用的是哪个 Python、从哪找到的，出问题一眼能看出跑的是哪一个",
+          "找不到可用 Python 时给出中文提示和指定方式（set WORKBUDDY_PYTHON=...），窗口不再一闪而过",
+          "参数照常透传：start.bat --port 9000 / --once / --data-dir 都能直接跟在后面"
+        ],
+        "维护": [
+          "启动器按候选顺序逐个试：WORKBUDDY_PYTHON → WorkBuddy 自带 Python → 安装目录 vendor/python → py -3 → PATH → 常见安装位置；每个候选先排除 WindowsApps 目录，再真跑一次 python -c \"import sys\" 才认",
+          "start.bat 固定为 GBK + CRLF，并在文件头注明原因：cmd 解析 UTF-8 中文批处理时 goto/call 会按错误字节偏移跳转，从某行中间继续执行，表现为一串「不是内部或外部命令」",
+          "截图归档到 docs/images，README 的中英图片路径同步；根目录只留代码、文档与版本文件",
+          "README 补上启动器的查找顺序、WORKBUDDY_PYTHON 覆盖方式与编码约束"
+        ]
+      },
+      "tag": "v0.2.1"
+    },
     {
       "version": "0.2.0",
       "status": "released",
