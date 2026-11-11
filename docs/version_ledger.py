@@ -30,6 +30,53 @@ REQUIRED = ("version", "status", "theme", "business", "changes")
 DEFAULT_STATUSES = {"released": "已交付", "demo": "已演示", "iterating": "开发中"}
 DEFAULT_GROUPS = "用户端 / 管理端 / 后端 / 部署"
 
+# 发布说明的固定章节：分组名写成这些 key，中英文各自翻译；写别的名字就原样保留。
+CANON_SECTIONS = {
+    "breaking": {"en": "Breaking Changes", "zh": "不兼容改动"},
+    "features": {"en": "Features", "zh": "新功能"},
+    "fixes": {"en": "Fixes", "zh": "修复"},
+    "perf": {"en": "Performance", "zh": "性能"},
+    "changes": {"en": "Changes", "zh": "其他改动"},
+    "docs": {"en": "Docs", "zh": "文档"},
+}
+SECTION_ORDER = ["breaking", "features", "fixes", "perf", "changes", "docs"]
+
+LABELS = {
+    "en": {
+        "install": "Install / Update",
+        "install_cmd": "Install",
+        "update_cmd": "Update",
+        "deployed": "Deployed at",
+        "whats_new": "What's New",
+        "business": "Why this release",
+        "commits": "Commits",
+        "contributors": "Contributors",
+        "feedback": "Feedback",
+        "note": "Notes",
+        "rollback": "Roll back",
+        "empty": "_No user-visible changes recorded for this version._",
+        "commits_unit": "commits",
+        "commit_unit": "commit",
+    },
+    "zh": {
+        "install": "安装 / 升级",
+        "install_cmd": "安装",
+        "update_cmd": "升级",
+        "deployed": "线上地址",
+        "whats_new": "本版更新",
+        "business": "为什么发这一版",
+        "commits": "提交",
+        "contributors": "贡献者",
+        "feedback": "业务反馈",
+        "note": "说明",
+        "rollback": "回滚",
+        "empty": "_这一版没有记录面向用户的改动。_",
+        "commits_unit": "个提交",
+        "commit_unit": "个提交",
+    },
+}
+LANGS = ("en", "zh")
+
 for _s in (sys.stdout, sys.stderr):
     try:
         _s.reconfigure(encoding="utf-8")  # type: ignore[attr-defined]
@@ -60,6 +107,41 @@ def info(msg: str) -> None:
 
 def vkey(v: str) -> tuple:
     return tuple(int(x) for x in v.split("."))
+
+
+def pick(val, lang: str = "zh") -> str:
+    """双语字段取值：字符串原样返回，{"en","zh"} 取指定语言，缺则回退另一语言。"""
+    if isinstance(val, str):
+        return val
+    if isinstance(val, dict):
+        for k in (lang, "zh", "en"):
+            got = val.get(k)
+            if isinstance(got, str) and got.strip():
+                return got
+        for k in val:
+            if isinstance(val[k], str) and val[k].strip():
+                return val[k]
+    return ""
+
+
+def bilingual(val) -> bool:
+    return isinstance(val, dict) and any(isinstance(val.get(k), str) for k in LANGS)
+
+
+def section_name(key: str, lang: str, overrides: dict | None = None) -> str:
+    spec = (overrides or {}).get(key) or CANON_SECTIONS.get(key)
+    if isinstance(spec, dict):
+        return pick(spec, lang) or key
+    if isinstance(spec, str):
+        return spec
+    return key
+
+
+def ordered_changes(changes: dict) -> list:
+    """按固定章节顺序排，自定义分组保持写入顺序排在后面。"""
+    keys = [k for k in SECTION_ORDER if k in changes]
+    keys += [k for k in changes if k not in SECTION_ORDER]
+    return [(k, changes[k] or []) for k in keys if (changes.get(k) or [])]
 
 
 class Ctx:
@@ -214,11 +296,24 @@ def validate(data: dict) -> tuple[list, list]:
             )
         ch = v.get("changes")
         if not isinstance(ch, dict):
-            errors.append(f"版本 {name} 的 changes 必须是对象（按「{DEFAULT_GROUPS}」分组）")
+            errors.append(f"版本 {name} 的 changes 必须是对象（按「{DEFAULT_GROUPS}」或 features/fixes/changes 分组）")
         else:
             for g, items in ch.items():
-                if not isinstance(items, list) or any(not isinstance(x, str) for x in items):
-                    errors.append(f"版本 {name} 的 changes.{g} 必须是字符串数组")
+                if not isinstance(items, list):
+                    errors.append(f"版本 {name} 的 changes.{g} 必须是数组")
+                    continue
+                for i, x in enumerate(items, 1):
+                    if isinstance(x, str):
+                        continue
+                    if bilingual(x):
+                        continue
+                    errors.append(
+                        f"版本 {name} 的 changes.{g}[{i}] 只能是字符串，"
+                        f'或 {{"en": "...", "zh": "..."}} 双语对象'
+                    )
+        biz = v.get("business")
+        if not isinstance(biz, str) and not bilingual(biz):
+            errors.append(f"版本 {name} 的 business 必须是字符串或双语对象")
         if v.get("pending"):
             warnings.append(f"版本 {name} 是骨架，business / changes 还没补完")
         if v.get("status") in ("released", "demo"):
@@ -230,7 +325,17 @@ def validate(data: dict) -> tuple[list, list]:
 
 
 def payload(data: dict) -> str:
-    return json.dumps(data, ensure_ascii=False, indent=2).replace("</", "<\\/")
+    """看板数据：双语条目按看板语言拍平成字符串，分组名换成看板语言的叫法。"""
+    lang = data.get("board_lang") or "zh"
+    out = json.loads(json.dumps(data, ensure_ascii=False))
+    for v in out.get("versions", []):
+        v["business"] = pick(v.get("business"), lang)
+        ch = {}
+        for g, items in ordered_changes(v.get("changes") or {}):
+            name = section_name(g, lang, data.get("sections"))
+            ch[name] = [x for x in (pick(i, lang) for i in items) if x]
+        v["changes"] = ch
+    return json.dumps(out, ensure_ascii=False, indent=2).replace("</", "<\\/")
 
 
 def render(ctx: Ctx) -> str:
@@ -281,6 +386,7 @@ git tag -a v$NEW -m "v$NEW 这一版的主题"
 git push origin HEAD --tags
 
 # 4. 在 GitHub 上留一份可检索的发布记录（可选但推荐）
+#    --lang both 是默认值：英文块在前、中文块在后，一次粘进 Release 正文
 python docs/version_ledger.py notes $NEW --out notes.md
 gh release create v$NEW --title "v$NEW" --notes-file notes.md
 
@@ -312,6 +418,7 @@ git tag -a v$NEW -m "v$NEW 这一版的主题"
 git push origin HEAD --tags
 
 # 4. 在 GitLab 上留一份可检索的发布记录（可选但推荐）
+#    --lang both 是默认值：英文块在前、中文块在后，一次粘进 Release 正文
 python docs/version_ledger.py notes $NEW --out notes.md
 glab release create v$NEW --name "v$NEW" --notes-file notes.md
 
@@ -394,6 +501,8 @@ def cmd_init(args: argparse.Namespace) -> None:
         "version_file": args.version_file.replace("\\", "/"),
         "artifact": args.artifact or "",
         "health_url": args.health_url or "",
+        "lang": args.lang,
+        "board_lang": "zh",
         "statuses": statuses,
         "updated": date.today().isoformat(),
         "versions": [{
@@ -405,9 +514,20 @@ def cmd_init(args: argparse.Namespace) -> None:
             "feedback": [],
             "changes": {},
             "pending": True,
-            "next": f"把这一版的改动按「{DEFAULT_GROUPS}」写进 changes，然后删掉 pending 和 next 两个字段。",
+            "next": (
+                f"把这一版的改动按「{DEFAULT_GROUPS}」或 features/fixes/changes 写进 changes，"
+                f"然后删掉 pending 和 next 两个字段。"
+            ),
         }],
     }
+    if args.install:
+        data["install"] = list(args.install)
+    if args.update:
+        data["update"] = list(args.update)
+    order = ["product", "subtitle", "platform", "repo_url", "version_file", "artifact",
+             "health_url", "lang", "board_lang", "install", "update", "sections",
+             "statuses", "updated", "versions"]
+    data = {k: data[k] for k in order if k in data}
     ctx.data = data
     ctx.save()
     ok(f"写入 {ctx.rel(ctx.json_path)}")
@@ -591,6 +711,151 @@ def cmd_check(args: argparse.Namespace) -> None:
         sys.exit(1)
 
 
+def expand(s: str, v: dict, ctx: "Ctx") -> str:
+    return (
+        str(s)
+        .replace("{version}", v["version"])
+        .replace("{tag}", v.get("tag") or f"v{v['version']}")
+        .replace("{product}", ctx.data.get("product") or "")
+    )
+
+
+def prev_of(ctx: "Ctx", v: dict) -> tuple:
+    """按语义版本排在当前版前一位的那条记录，返回 (tag, version)。"""
+    vers = sorted(
+        [x for x in ctx.data["versions"] if SEMVER.match(str(x.get("version", "")))],
+        key=lambda x: vkey(x["version"]),
+    )
+    idx = next((i for i, x in enumerate(vers) if x.get("version") == v.get("version")), None)
+    if not idx:
+        return "", ""
+    prev = vers[idx - 1]
+    return (prev.get("tag") or f"v{prev['version']}"), prev["version"]
+
+
+def gh_handle(email: str) -> str:
+    m = re.match(r"^(?:\d+\+)?([A-Za-z0-9][A-Za-z0-9-]*)@users\.noreply\.github\.com$", email or "")
+    return m.group(1) if m else ""
+
+
+def git_history(ctx: "Ctx", tag: str, prev_tag: str) -> tuple:
+    """两个标签之间的提交和作者。标签不存在时静默返回空。"""
+    if not tag:
+        return [], []
+    rng = f"{prev_tag}..{tag}" if prev_tag else tag
+    rc, out = git(ctx.root, "log", "--no-merges", "--pretty=format:%h%x09%s%x09%an%x09%ae", rng)
+    if rc != 0 or not out:
+        return [], []
+    commits, people, seen = [], [], set()
+    for line in out.splitlines():
+        parts = line.split("\t")
+        if len(parts) < 2 or not parts[0]:
+            continue
+        commits.append((parts[0], parts[1]))
+        author = parts[2] if len(parts) > 2 else ""
+        handle = gh_handle(parts[3] if len(parts) > 3 else "")
+        name = handle or author
+        if name and name not in seen:
+            seen.add(name)
+            people.append((name, bool(handle)))
+    return commits, people
+
+
+def link_refs(text: str, item, repo: str) -> str:
+    """按 dsh 的排法挂引用：issue 紧跟加粗标题，commit 落在句末。"""
+    if not isinstance(item, dict):
+        return text
+    issues, commits = [], []
+    for n in item.get("issues") or []:
+        s = str(n).strip()
+        num = s.lstrip("#")
+        issues.append(f"[{s}]({repo}/issues/{num})" if repo and num.isdigit() else s)
+    for c in item.get("commits") or []:
+        c = str(c).strip()
+        commits.append(f"[{c[:7]}]({repo}/commit/{c})" if repo else c[:7])
+    if not issues and not commits:
+        return text
+
+    head_ref = f" ({', '.join(issues)})" if issues else ""
+    tail_ref = f" ({', '.join(commits)})" if commits else ""
+
+    m = re.match(r"^(\*\*.+?\*\*)(\s*)(——|—|-)(\s*)(.+)$", text, re.S)
+    if m:
+        return f"{m.group(1)}{head_ref} {m.group(3)}{m.group(4)}{m.group(5).rstrip()}{tail_ref}"
+    if head_ref:
+        return f"{text.rstrip()}{tail_ref or head_ref}"
+    return f"{text.rstrip()}{tail_ref}"
+
+
+def render_block(ctx: "Ctx", v: dict, lang: str, hist: dict, prev_tag: str, tag: str) -> list:
+    L = LABELS[lang]
+    repo = (ctx.data.get("repo_url") or "").rstrip("/")
+    host = (re.match(r"https?://([^/]+)/", repo) or [None, ""])[1]
+    out = []
+
+    install = [expand(x, v, ctx) for x in (ctx.data.get("install") or []) if str(x).strip()]
+    update = [expand(x, v, ctx) for x in (ctx.data.get("update") or []) if str(x).strip()]
+    health = ctx.data.get("health_url") or ""
+    if install or update:
+        out += [f"## {L['install']}", ""]
+        if install:
+            out += [f"**{L['install_cmd']}**", "", "```bash", *install, "```", ""]
+        if update:
+            out += [f"**{L['update_cmd']}**", "", "```bash", *update, "```", ""]
+    elif health:
+        out += [f"## {L['install']}", "", f"{L['deployed']} {health}", ""]
+
+    out += [f"## {L['whats_new']}", ""]
+    groups = ordered_changes(v.get("changes") or {})
+    if not groups:
+        out += [L["empty"], ""]
+    for key, items in groups:
+        rows = []
+        for it in items:
+            text = pick(it, lang)
+            if not text:
+                continue
+            rows.append("- " + link_refs(text, it, repo))
+        if not rows:
+            continue
+        out += [f"### {section_name(key, lang, ctx.data.get('sections'))}", "", *rows, ""]
+
+    biz = pick(v.get("business"), lang)
+    if biz and not biz.startswith("待补充"):
+        out += [f"## {L['business']}", "", biz, ""]
+
+    fb = v.get("feedback") or []
+    if fb:
+        out += [f"## {L['feedback']}", ""] + [f"- {pick(x, lang) or x}" for x in fb] + [""]
+
+    if v.get("note"):
+        out += [f"## {L['note']}", "", pick(v["note"], lang) or str(v["note"]), ""]
+
+    if hist.get("commits"):
+        out += [f"## {L['commits']}", ""]
+        for h, subj in hist["commits"]:
+            out.append(f"- {subj}" + (f" ([{h}]({repo}/commit/{h}))" if repo else f" ({h})"))
+        out.append("")
+
+    if hist.get("people"):
+        out += [f"## {L['contributors']}", ""]
+        for name, is_handle in hist["people"]:
+            if is_handle and host:
+                out.append(f"- [@{name}](https://{host}/{name})")
+            else:
+                out.append(f"- {name}")
+        out.append("")
+
+    n = len(hist.get("commits") or [])
+    if prev_tag and tag and repo and hist.get("ok"):
+        foot = f"[{prev_tag}...{tag}]({repo}/compare/{prev_tag}...{tag})"
+        if n:
+            foot += f" · {n} {L['commit_unit'] if n == 1 else L['commits_unit']}"
+        out += [foot, ""]
+
+    return out
+
+
 def cmd_notes(args: argparse.Namespace) -> None:
     ctx = Ctx(args.root, args.docs)
     ctx.load()
@@ -599,51 +864,33 @@ def cmd_notes(args: argparse.Namespace) -> None:
     if not v:
         die(f"台账里没有 {version}")
 
-    lines = [f"# v{version} {v.get('theme', '')}".rstrip(), ""]
-    rows = [
-        ("版本号", version),
-        ("状态", (ctx.data.get("statuses") or DEFAULT_STATUSES).get(v.get("status"), v.get("status"))),
-        ("主题", v.get("theme", "")),
-        ("日期", v.get("date") or "未发布"),
-        ("代码标签", v.get("tag") or "未打"),
-        ("产物", (ctx.data.get("artifact") or "").replace("{version}", version) or "—"),
-        ("业务台账", f"`{ctx.rel(ctx.json_path)}`"),
-    ]
-    lines += ["| 项目 | 值 |", "|---|---|"] + [f"| {k} | {val} |" for k, val in rows]
-    lines += ["", "## 业务需求", "", v.get("business", "") or "（待补充）"]
+    want = args.lang or ctx.data.get("lang") or "both"
+    if want not in ("en", "zh", "both"):
+        die(f"--lang 只能是 en / zh / both（收到 {want}）")
+    langs = ["en", "zh"] if want == "both" else [want]
 
-    changes = v.get("changes") or {}
-    if changes:
-        lines += ["", "## 改动"]
-        for g, items in changes.items():
-            if not items:
-                continue
-            lines += ["", f"### {g}", ""] + [f"- {x}" for x in items]
+    tag = v.get("tag") or f"v{version}"
+    prev_tag, _ = prev_of(ctx, v)
 
-    fb = v.get("feedback") or []
-    if fb:
-        lines += ["", "## 业务反馈", ""] + [f"- {x}" for x in fb]
+    commits, people = [], []
+    if not args.no_git:
+        commits, people = git_history(ctx, tag, prev_tag)
+    hist = {"commits": commits, "people": people, "ok": bool(commits) or args.no_git}
 
-    if v.get("note"):
-        lines += ["", "## 说明", "", v["note"]]
+    blocks = ["\n".join(render_block(ctx, v, lg, hist, prev_tag, tag)).strip() for lg in langs]
+    text = "\n\n---\n\n".join(b for b in blocks if b).strip() + "\n"
 
-    lines += ["", "## 回滚", "", "```bash"]
-    if v.get("tag"):
-        lines += [f"git checkout {v['tag']}        # 只看旧版代码，不动线上"]
-    art = ctx.data.get("artifact") or ""
-    if art:
-        lines += [f"# 旧版产物：{art.replace('{version}', version)}"]
-    if v.get("date"):
-        lines += [f"# 数据：_releases/v{version}/ 里的快照（结构变更后才需要）"]
-    lines += ["```", ""]
+    if args.title:
+        head = f"# v{version}" + (f" — {pick(v.get('theme'), 'en')}" if v.get("theme") else "")
+        text = head + "\n\n" + text
 
-    text = "\n".join(lines)
     if args.out:
         out = Path(args.out)
         if not out.is_absolute():
             out = ctx.root / out
         out.write_text(text, encoding="utf-8")
-        ok(f"发布说明写入 {out}")
+        detail = f"{len(commits)} 个提交" if commits else "无提交信息（标签可能还没打）"
+        ok(f"发布说明写入 {out}（{'+'.join(langs)}，{detail}）")
     else:
         print(text)
 
@@ -700,6 +947,12 @@ def main() -> None:
     pi.add_argument("--repo-url", help="仓库地址，默认取 origin")
     pi.add_argument("--artifact", help="产物名模板，如 app:{version}（可留空）")
     pi.add_argument("--health-url", help="部署后的健康检查地址（可留空）")
+    pi.add_argument("--lang", choices=["en", "zh", "both"], default="both",
+                    help="发布说明默认语言，both = 先英后中（默认 both）")
+    pi.add_argument("--install", action="append", metavar="CMD",
+                    help="安装命令，可重复；支持 {product} {version}")
+    pi.add_argument("--update", action="append", metavar="CMD",
+                    help="升级命令，可重复；支持 {product} {version}")
     pi.add_argument("--force", action="store_true", help="覆盖已有台账")
     pi.set_defaults(func=cmd_init)
 
@@ -722,6 +975,11 @@ def main() -> None:
     pnt = sub.add_parser("notes", parents=[common], help="按台账生成发布说明（Release / changelog 用）")
     pnt.add_argument("version")
     pnt.add_argument("--out", help="写到文件，默认打印")
+    pnt.add_argument("--lang", choices=["en", "zh", "both"],
+                     help="输出语言，默认读 versions.json 的 lang，没有则 both（先英后中）")
+    pnt.add_argument("--no-git", action="store_true",
+                     help="不读 git 日志（默认会补 Commits / Contributors / 对比链接）")
+    pnt.add_argument("--title", action="store_true", help="在开头加一级标题「# v<版本> — <主题>」")
     pnt.set_defaults(func=cmd_notes)
 
     ps = sub.add_parser("set-status", parents=[common], help="改版本状态 / 日期 / tag")

@@ -6,6 +6,17 @@
   "version_file": "VERSION",
   "artifact": "minitool-usage-dashboard-{version}.zip",
   "health_url": "http://127.0.0.1:8765/api/health",
+  "lang": "zh",
+  "board_lang": "zh",
+  "install": [
+    "git clone https://github.com/vinstar1/buddy-context.git",
+    "cd buddy-context",
+    "python dashboard.py   # 或双击 start.bat"
+  ],
+  "update": [
+    "git pull",
+    "python dashboard.py"
+  ],
   "statuses": {
     "released": "已交付",
     "demo": "已演示",

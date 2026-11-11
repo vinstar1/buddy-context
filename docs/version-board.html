@@ -170,7 +170,7 @@ footer code{font-family:var(--mono);color:var(--ink2)}
   <div class="wrap">
     <nav class="filters" id="filters"></nav>
     <div class="acts">
-      <span class="gen">数据源 <code id="src">docs/versions.json</code> · 生成于 2026-11-11 09:48</span>
+      <span class="gen">数据源 <code id="src">docs/versions.json</code> · 生成于 2026-11-11 09:50</span>
       <button id="print" type="button">打印 / 导出 PDF</button>
     </div>
   </div>
@@ -213,6 +213,17 @@ footer code{font-family:var(--mono);color:var(--ink2)}
   "version_file": "VERSION",
   "artifact": "minitool-usage-dashboard-{version}.zip",
   "health_url": "http://127.0.0.1:8765/api/health",
+  "lang": "zh",
+  "board_lang": "zh",
+  "install": [
+    "git clone https://github.com/vinstar1/buddy-context.git",
+    "cd buddy-context",
+    "python dashboard.py   # 或双击 start.bat"
+  ],
+  "update": [
+    "git pull",
+    "python dashboard.py"
+  ],
   "statuses": {
     "released": "已交付",
     "demo": "已演示",
@@ -318,6 +329,7 @@ footer code{font-family:var(--mono);color:var(--ink2)}
   var V = (RAW.versions || []).slice();
 
   function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function md(s){return esc(s).replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>').replace(/`([^`]+)`/g,'<code>$1</code>');}
   function cmp(a,b){var A=a.split('.').map(Number),B=b.split('.').map(Number);for(var i=0;i<3;i++){if((A[i]||0)!==(B[i]||0))return (B[i]||0)-(A[i]||0);}return 0;}
   function flat(changes){var out=[];Object.keys(changes||{}).forEach(function(k){(changes[k]||[]).forEach(function(x){out.push(x);});});return out;}
   function chip(st){return '<span class="chip '+esc(STATUS[st]?st:'other')+'">'+esc(STATUS[st]||st)+'</span>';}
@@ -368,12 +380,12 @@ footer code{font-family:var(--mono);color:var(--ink2)}
   document.getElementById('sheet').innerHTML = V.map(function(v){
     var pts = flat(v.changes);
     var sum = pts.length
-      ? pts.slice(0,3).map(esc).join('；') + (pts.length > 3 ? '；等 ' + pts.length + ' 项' : '')
+      ? pts.slice(0,3).map(md).join('；') + (pts.length > 3 ? '；等 ' + pts.length + ' 项' : '')
       : '<span style="color:var(--ink3)">待汇总</span>';
     return '<tr>' +
       '<td class="v">v' + esc(v.version) + '<em>' + esc(v.theme || '') + '</em></td>' +
       '<td style="white-space:nowrap">' + (v.date ? esc(v.date) : '—') + '</td>' +
-      '<td class="biz">' + esc(v.business || '') + '</td>' +
+      '<td class="biz">' + md(v.business || '') + '</td>' +
       '<td class="sum">' + sum + '</td>' +
       '<td>' + chip(v.status) + '</td>' +
     '</tr>';
@@ -384,7 +396,7 @@ footer code{font-family:var(--mono);color:var(--ink2)}
     var groups = Object.keys(v.changes || {});
     var tech = groups.filter(function(g){ return (v.changes[g] || []).length; }).map(function(g){
       return '<div class="grp"><dt>' + esc(g) + '</dt><dd><ul>' +
-        (v.changes[g] || []).map(function(it){ return '<li>' + esc(it) + '</li>'; }).join('') +
+        (v.changes[g] || []).map(function(it){ return '<li>' + md(it) + '</li>'; }).join('') +
       '</ul></dd></div>';
     }).join('');
 
