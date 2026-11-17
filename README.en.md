@@ -107,7 +107,7 @@ Definitions:
 
 ## Known limitations
 
-- **Time to first token (TTFT)**: the client's local data has no such field, so the "first token" column is always empty. Speed is estimated as output tokens ÷ turn duration, which includes tool calls and client overhead — it is not pure model latency.
+- **Pure model latency is inferred, not measured**: local logs carry no per-request start time, so it is approximated as turn duration minus the in-turn tool-call occupancy. Tool durations come from pairing `function_call` / `function_call_result` records and include client overhead, so the subtraction is imperfect; pure latency is therefore floored at 20% of the turn duration. **TTFT** genuinely does not exist locally — that column has been removed.
 - **Public holidays**: workdays are decided by weekday alone; the `HOLIDAYS` set is empty by default. Add dates to it if you need precision.
 - **Data lag**: after a turn ends, logs and credits keep being written for a few more minutes. The turn you just finished may read low and is marked 「进行中」 (in progress) in the table.
 - **Tool durations include client overhead**: they are measured between two log writes, so they run slightly longer than the tool itself. The command average is pulled up by `sleep` and build commands — the median is the steadier number.
