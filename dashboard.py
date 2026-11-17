@@ -26,6 +26,7 @@
 """
 
 import argparse
+import bisect
 import collections
 import datetime as dt
 import glob
@@ -525,12 +526,47 @@ def build_adv(events):
     return {"windows": windows, "total": len(events), "last": newest}
 
 
+def tool_time_index(events):
+    """会话 id → (时间戳数组, 工具耗时前缀和)，用于快速求某段时间被工具占掉多久。"""
+    by_sid = collections.defaultdict(list)
+    for e in events:
+        sid = e.get("s") or ""
+        by_sid[sid].append((e["t"], e.get("d") or 0.0))
+    idx = {}
+    for sid, lst in by_sid.items():
+        lst.sort()
+        ts = [x[0] for x in lst]
+        pre = [0.0]
+        for _, d in lst:
+            pre.append(pre[-1] + d)
+        idx[sid] = (ts, pre)
+    return idx
+
+
+def tool_seconds(idx, sid, start, end):
+    """统计 (start, end) 之间工具调用占用的秒数（两端都不含）。
+
+    之所以排除端点：function_call 自带 rawUsage，它的事件时间点就是那一步的完成时间，
+    把端点算进来容易把下一步的模型时间当成工具时间扣掉。
+    """
+    entry = idx.get(sid or "")
+    if not entry:
+        return 0.0
+    ts, pre = entry
+    lo = bisect.bisect_right(ts, start)
+    hi = bisect.bisect_left(ts, end)
+    if hi <= lo:
+        return 0.0
+    return pre[hi] - pre[lo]
+
+
 def build(force=False):
     """汇总一次，返回可直接喂给前端的字典。"""
     req_map, tool_events, n_files, changed = scan_requests(force=force)
     credits = load_credits()
     titles = load_session_titles()
     adv = build_adv(tool_events)
+    tool_idx = tool_time_index(tool_events)
 
     rows = []
     missing = 0
@@ -590,6 +626,13 @@ def build(force=False):
             missing += 1
         sid = t["sid"]
         dur = round((t["last"] - t["first"]) / 1000.0, 2) if t["steps"] > 1 else t["step_dur"]
+        # 模型纯净时延：轮次时长扣掉本轮内工具执行占用的时间，剩下的才算模型自己花的。
+        # 下限兜到轮次时长的 20%，避免工具耗时统计偏大时算出荒唐的速度。
+        pure = dur
+        tool_s = 0.0
+        if dur:
+            tool_s = round(tool_seconds(tool_idx, sid, t["first"], t["last"]), 2)
+            pure = round(max(dur * 0.2, dur - tool_s, 0.1), 2)
         rows.append({
             "rid": rid,
             "sid": sid,
@@ -614,6 +657,8 @@ def build(force=False):
             "costOff": round(t["cost_off"], 6) if t["priced"] else None,
             "live": (int(time.time() * 1000) - t["last"]) < 10 * 60 * 1000,
             "dur": dur,
+            "mdur": pure,
+            "tdur": tool_s,
         })
 
     rows.sort(key=lambda x: -x["ts"])
@@ -640,7 +685,8 @@ def build(force=False):
         a["p"] += r["p"]
         a["c"] += r["c"]
         a["ch"] += r["ch"]
-        a["dur"] += r["dur"] or 0
+        # 速度统一按模型纯净时延算：r["mdur"] 已剔除本轮工具耗时
+        a["dur"] += r["mdur"] or 0
         if r["cost"] is not None:
             a["amt"] += r["cost"]
             a["priced"] += 1
@@ -719,6 +765,7 @@ def build(force=False):
             "m": r["m"], "fam": r["fam"],
             "steps": r["steps"], "rs": r["rs"], "p": r["p"], "c": r["c"], "ch": r["ch"],
             "cr": r["cr"], "hasCr": r["hasCr"], "cost": r["cost"], "dur": r["dur"],
+            "mdur": r["mdur"], "tdur": r["tdur"],
             "costPeak": r["costPeak"], "costOff": r["costOff"],
             "peak": r["peak"], "peakMixed": r["peakMixed"], "peakSteps": r["peakSteps"],
             "live": r["live"],

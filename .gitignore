@@ -18,6 +18,9 @@ __pycache__/
 .venv/
 venv/
 
+# 本地排查用的临时输出
+.tmp-run/
+
 # 发版快照与发布记录（不入 git）
 _releases/
 

@@ -89,6 +89,8 @@
 
   .foot { padding: 14px 20px 28px; color: #a8a8a8; font-size: 11.5px; line-height: 1.8; }
   .foot b { font-weight: 500; color: #8a8a8a; }
+  .foot-mini { padding: 14px 20px 22px; font-size: 11px; display: flex; align-items: center; gap: 6px; color: #b0b0b0; }
+  .foot-mini .sep { color: #dcdcdc; }
 
   tbody tr.rowlink { cursor: pointer; }
   tbody tr.rowlink:hover td { background: #f7fbfa; }
@@ -383,7 +385,7 @@
           <th class="r">元 / 百万 token</th>
           <th class="r">积分 / 百万 token</th>
           <th class="r">缓存命中</th>
-          <th class="r">速度</th>
+          <th class="r" title="输出 tokens ÷ 模型纯净时延（已剔除工具调用与客户端开销）">速度</th>
         </tr>
       </thead>
       <tbody id="costBody"></tbody>
@@ -419,9 +421,9 @@
           <th class="r" style="width:92px">缓存命中</th>
           <th class="r" style="width:92px">金额</th>
           <th class="r" style="width:80px">积分</th>
+          <th class="r" style="width:72px" title="汇率 = 积分 ÷ 金额，即 1 元官方价折合多少积分">汇率</th>
           <th class="r" style="width:76px">耗时</th>
-          <th class="r" style="width:84px">速度</th>
-          <th class="r" style="width:60px">首字</th>
+          <th class="r" style="width:84px" title="输出 tokens ÷ 模型纯净时延（已剔除工具调用与客户端开销）">速度</th>
         </tr>
       </thead>
       <tbody id="tbody"></tbody>
@@ -430,11 +432,10 @@
   </div>
 </div>
 
-<div class="foot">
-  <b>统计单位</b>是「一轮对话」：同一个 <span class="num">conversationRequestId</span> 下通常包含多次 API 调用（<span class="num">stepSeq</span>），token 与金额按步累加，积分取该轮合计（与客户端「共消耗」一致）。<br>
-  <b>数据来源</b>：本机 <span class="num">~/.workbuddy/projects/*/*.jsonl</span> 中每条 assistant 消息的 <span class="num">providerData.rawUsage</span>，按 <span class="num">conversationRequestId</span> 与 <span class="num">session_usage.credit_json</span> 对账；积分优先取库内快照，缺失时用日志逐轮求和补齐。<br>
-  <b>金额</b>按 DeepSeek 官方价目折算（元），每一步按其发生时刻判定高峰/空闲；非 DeepSeek 模型没有官方价，金额留空。<b>峰谷标记对所有模型生效</b>：列表时间列显示「开始 → 结束」，标「峰」表示每次调用都在高峰时段，标「峰 62%」表示这一轮只有部分调用落在高峰。<b>积分</b>是平台计量单位，与人民币不是 1:1。<br>
-  <b>速度</b> = 输出 tokens ÷ 轮次时长，含工具调用与客户端开销，非模型纯净时延。<b>首字（TTFT）</b>：本地未记录，故留空。<b>快照</b> <span id="genTime">—</span>，<b>版本</b> v<span class="num">__VERSION__</span>。
+<div class="foot foot-mini">
+  <span>快照 <span id="genTime">—</span></span>
+  <span class="sep">·</span>
+  <span>版本 v<span class="num">__VERSION__</span></span>
 </div>
 
 </div>
@@ -686,6 +687,16 @@ function buildSeries(rs) {
   return { labels, cr, req, tok, amt };
 }
 
+// 柱顶数字：一律保留整数；tokens 常上亿，改用万/亿的整数写法，否则一根柱上挤不下
+function barText(v, m) {
+  const k = m || metric;
+  if (k === 'tok') {
+    if (v >= 1e8) return Math.round(v / 1e8) + '亿';
+    if (v >= 1e4) return Math.round(v / 1e4) + '万';
+  }
+  return String(Math.round(v || 0));
+}
+
 function renderChart(rs) {
   lastRows = rs;
   const host = document.getElementById('chartHost');
@@ -695,12 +706,13 @@ function renderChart(rs) {
   const s = buildSeries(rs);
   const data = metric === 'amt' ? s.amt : metric === 'cr' ? s.cr : metric === 'req' ? s.req : s.tok;
   const unitName = metric === 'amt' ? '元' : metric === 'cr' ? '积分' : metric === 'req' ? '请求' : 'tokens';
-  const padL = 48, padR = 12, padT = 12, padB = 22;
+  const padL = 48, padR = 12, padT = 26, padB = 22;
   const plotW = Math.max(10, W - padL - padR), plotH = Math.max(10, H - padT - padB);
   const peak = Math.max(1, ...data), top = peak * 1.18, n = data.length;
   const slot = plotW / n, bw = Math.max(2.5, Math.min(22, slot * 0.5));
   const yOf = v => padT + plotH - (v / top) * plotH;
   const tick = v => (metric === 'req') ? String(Math.round(v)) : (metric === 'amt' ? v.toFixed(2) : fmtAxis(v));
+  const fs = slot >= 30 ? 9.5 : (slot >= 22 ? 8.5 : 7.5);
 
   let parts = [];
   [0, top / 2, top].forEach(t => {
@@ -712,8 +724,10 @@ function renderChart(rs) {
     const h = (v / top) * plotH;
     if (h <= 0) return;
     const x = padL + slot * i + (slot - bw) / 2;
+    const yTop = padT + plotH - h;
     const label = s.labels[i] + ' · ' + unitName + ' ' + (metric === 'amt' ? '¥' + v.toFixed(4) : metric === 'req' ? v : (metric === 'tok' ? fmtTok(v) : fmt(v)));
-    parts.push('<rect class="bar" x="' + x.toFixed(1) + '" y="' + (padT + plotH - h).toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + h.toFixed(1) + '" rx="1.5" fill="#12a594"><title>' + label + '</title></rect>');
+    parts.push('<rect class="bar" x="' + x.toFixed(1) + '" y="' + yTop.toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + h.toFixed(1) + '" rx="1.5" fill="#12a594"><title>' + label + '</title></rect>');
+    parts.push('<text x="' + (x + bw / 2).toFixed(1) + '" y="' + Math.max(padT + fs - 1, yTop - 4).toFixed(1) + '" text-anchor="middle" font-size="' + fs + '" fill="#6b6b6b">' + barText(v) + '</text>');
   });
   const stepX = Math.max(1, Math.ceil(n / 12));
   s.labels.forEach((lb, i) => {
@@ -729,7 +743,7 @@ function renderCost(rs) {
   const agg = {};
   rs.forEach(r => {
     const a = agg[r.m] || (agg[r.m] = { req: 0, cr: 0, p: 0, c: 0, ch: 0, dur: 0, amt: 0, priced: 0, billed: 0 });
-    a.req++; a.cr += (r.cr || 0); a.p += r.p; a.c += r.c; a.ch += r.ch; a.dur += r.dur || 0;
+    a.req++; a.cr += (r.cr || 0); a.p += r.p; a.c += r.c; a.ch += r.ch; a.dur += (r.mdur || r.dur || 0);
     if (r.hasCr !== false) a.billed++;
     if (r.cost !== null && r.cost !== undefined) { a.amt += r.cost; a.priced++; }
   });
@@ -771,8 +785,11 @@ function renderTable(rs) {
   }
   tb.innerHTML = list.map(r => {
     const hit = r.p ? (r.ch / r.p * 100) : 0;
-    const speed = r.dur && r.c ? r.c / r.dur : 0;
+    const pt = r.mdur || r.dur;              // 速度只认模型纯净时延
+    const speed = pt && r.c ? r.c / pt : 0;
     const priced = r.cost !== null && r.cost !== undefined;
+    // 汇率：1 元官方价折合多少积分，只在有金额的 DeepSeek 轮次上成立
+    const fx = (priced && r.cost > 0 && r.hasCr !== false) ? r.cr / r.cost : null;
     const t0 = r.ts0 || r.ts;
     const span = Math.floor(t0 / 60000) === Math.floor(r.ts / 60000)
       ? ''
@@ -791,9 +808,9 @@ function renderTable(rs) {
       <td class="r num">${r.p ? hit.toFixed(1) + '%' : '<span class="dash">—</span>'}</td>
       <td class="r num">${priced ? '<b style="font-weight:500">¥' + money(r.cost) + '</b>' : '<span class="dash" title="该模型无官方价">—</span>'}</td>
       <td class="r num">${r.hasCr === false ? '<span class="dash" title="无积分记录">—</span>' : fmt(r.cr)}</td>
+      <td class="r num">${fx === null ? '<span class="dash" title="没有金额就换不出汇率">—</span>' : '<b style="font-weight:500">' + fx.toFixed(1) + '</b>'}</td>
       <td class="r num">${r.dur ? r.dur.toFixed(1) + 's' : '<span class="dash">—</span>'}</td>
       <td class="r num">${speed ? speed.toFixed(0) + ' tok/s' : '<span class="dash">—</span>'}</td>
-      <td class="r num"><span class="dash" title="本地未记录 TTFT">—</span></td>
     </tr>`;
   }).join('');
   tb.querySelectorAll('tr[data-rid]').forEach(tr => {
@@ -818,12 +835,13 @@ function advWin() {
 function drawBars(host, labels, values, color, unit) {
   const W = Math.max(320, host.clientWidth || 900);
   const H = host.clientHeight || 152;
-  const padL = 44, padR = 12, padT = 12, padB = 22;
+  const padL = 44, padR = 12, padT = 24, padB = 22;
   const plotW = Math.max(10, W - padL - padR), plotH = Math.max(10, H - padT - padB);
   const n = values.length || 1;
   const peak = Math.max(1, ...values), top = peak * 1.18;
   const slot = plotW / n, bw = Math.max(2, Math.min(22, slot * 0.5));
   const yOf = v => padT + plotH - (v / top) * plotH;
+  const fs = slot >= 30 ? 9.5 : (slot >= 22 ? 8.5 : 7.5);
   const parts = [];
   [0, top / 2, top].forEach(t => {
     const yy = yOf(t);
@@ -834,7 +852,9 @@ function drawBars(host, labels, values, color, unit) {
     const h = (v / top) * plotH;
     if (h <= 0) return;
     const x = padL + slot * i + (slot - bw) / 2;
-    parts.push('<rect class="abar" x="' + x.toFixed(1) + '" y="' + (padT + plotH - h).toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + h.toFixed(1) + '" rx="1.5" fill="' + color + '"><title>' + labels[i] + ' · ' + unit + ' ' + fmtInt(v) + '</title></rect>');
+    const yTop = padT + plotH - h;
+    parts.push('<rect class="abar" x="' + x.toFixed(1) + '" y="' + yTop.toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + h.toFixed(1) + '" rx="1.5" fill="' + color + '"><title>' + labels[i] + ' · ' + unit + ' ' + fmtInt(v) + '</title></rect>');
+    parts.push('<text x="' + (x + bw / 2).toFixed(1) + '" y="' + Math.max(padT + fs - 1, yTop - 4).toFixed(1) + '" text-anchor="middle" font-size="' + fs + '" fill="#6b6b6b">' + Math.round(v) + '</text>');
   });
   const stepX = Math.max(1, Math.ceil(n / 12));
   labels.forEach((lb, i) => {
@@ -1043,10 +1063,13 @@ function openDetail(rid) {
     ${r.live ? '<div style="color:#a8a8a8;font-size:11.5px;margin-top:6px;">这一轮结束不到 10 分钟，日志与积分仍在写入，数值可能继续增加，稍后点「立即同步」可刷新。</div>' : ''}
   </div>`;
 
+  const pt = r.mdur || r.dur;
   html += `<div class="dsec"><h4>性能</h4>
-    <div class="kv"><span class="k">耗时</span><span class="v num">${r.dur ? r.dur.toFixed(1) + ' s' : '—'}</span></div>
-    <div class="kv"><span class="k">速度</span><span class="v num">${r.dur && r.c ? (r.c / r.dur).toFixed(0) + ' tok/s' : '—'}</span></div>
-    <div class="kv"><span class="k">首字</span><span class="v">未记录</span></div>
+    <div class="kv"><span class="k">轮次耗时</span><span class="v num">${r.dur ? r.dur.toFixed(1) + ' s' : '—'}</span></div>
+    <div class="kv"><span class="k">其中工具调用</span><span class="v num">${r.tdur ? '−' + r.tdur.toFixed(1) + ' s' : '—'}</span></div>
+    <div class="kv"><span class="k">模型纯净时延</span><span class="v num">${pt ? pt.toFixed(1) + ' s' : '—'}</span></div>
+    <div class="kv"><span class="k">速度</span><span class="v num">${pt && r.c ? (r.c / pt).toFixed(0) + ' tok/s' : '—'}</span></div>
+    <div style="color:#a8a8a8;font-size:11.5px;margin-top:6px;">纯净时延 = 轮次耗时 − 本轮内工具执行占用，剩余的才是模型自己花的；速度按纯净时延折算。</div>
   </div>`;
 
   document.getElementById('drawerBody').innerHTML = html;
